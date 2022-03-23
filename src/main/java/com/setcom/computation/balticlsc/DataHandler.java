@@ -1,6 +1,7 @@
-package com.setcom.computation.BalticLSC;
+package com.setcom.computation.balticlsc;
 
 import org.javatuples.Pair;
+import org.springframework.lang.Nullable;
 
 import java.util.Dictionary;
 import java.util.List;
@@ -26,7 +27,9 @@ public class DataHandler implements IDataHandler{
     {
         List<String> values;
         long[] sizes;
-        (values, sizes) = ObtainDataItemsNDim(pinName); //TODO how to handle it?
+        //(values, sizes) = ObtainDataItemsNDim(pinName); //TODO how to handle it?
+        Pair<List<String>, long[]> obtainData = ObtainDataItemsNDim(pinName);
+        obtainData.
         if (null == values || 0 == values.size())
             return null;
         if (null == sizes && 1 == values.size())
@@ -126,7 +129,7 @@ public class DataHandler implements IDataHandler{
     ///
     /// <param name="pinName"></param>
     /// <param name="handle"></param>
-    public short CheckConnection(string pinName, Dictionary<string,string> handle = null)
+    public short CheckConnection(String pinName, @Nullable Dictionary<String, String> handle)
     {
         try
         {
@@ -140,25 +143,25 @@ public class DataHandler implements IDataHandler{
         }
     }
 
-    private DataHandle GetDataHandle(string pinName)
+    private DataHandle GetDataHandle(String pinName)
     {
-        if (_dataHandles.ContainsKey(pinName))
-            return _dataHandles[pinName];
-        string accessType = _registry.GetPinConfiguration(pinName).AccessType;
+        if (null != dataHandles.get(pinName))
+            return dataHandles.get(pinName);
+        String accessType = registry.GetPinConfiguration(pinName).accessType;
         DataHandle handle;
         switch (accessType)
         {
             case "Direct":
-                throw new ArgumentException(
+                throw new IllegalArgumentException(
                         "Cannot create a data handle for a pin of type \"Direct\"");
             case "MongoDB":
-                handle = new MongoDbHandle(pinName, _configuration);
+                handle = new MongoDbHandle(pinName, configuration);
                 break;
             default:
-                throw new NotImplementedException(
-                        $"AccessType ({accessType}) not supported by the DataHandler, has to be handled manually");
+                throw new UnsupportedOperationException("AccessType ("+ accessType +
+                        ") not supported by the DataHandler, has to be handled manually");
         }
-        _dataHandles[pinName] = handle;
+        dataHandles.put(pinName, handle);
         return handle;
     }
 }

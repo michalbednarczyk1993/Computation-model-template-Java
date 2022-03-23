@@ -1,15 +1,17 @@
-package com.setcom.computation.BalticLSC;
+package com.setcom.computation.balticlsc;
 
-import com.setcom.computation.DataModel.Status;
+import com.setcom.computation.datamodel.Status;
 import lombok.extern.slf4j.Slf4j;
+
+import java.util.Arrays;
 
 @Slf4j
 public class JobThread {
 
-    private String pinName;
-    private TokenListener listener;
-    private JobRegistry registry;
-    private DataHandler handler;
+    private final String pinName;
+    private final TokenListener listener;
+    private final JobRegistry registry;
+    private final DataHandler handler;
 
     public JobThread(String pinName, TokenListener listener, JobRegistry registry, DataHandler handler)
     {
@@ -23,10 +25,10 @@ public class JobThread {
         try
         {
             listener.DataReceived(pinName);
-            if ("true" == registry.GetPinConfiguration(pinName).IsRequired)
+            if ("true".equals(registry.GetPinConfiguration(pinName).isRequired))
                 listener.OptionalDataReceived(pinName);
             Status pinAggregatedStatus = Status.COMPLETED;
-            foreach (String pinName in registry.GetStrongPinNames())
+            for(String pinName : registry.GetStrongPinNames())
             {
                 Status pinStatus = registry.GetPinStatus(pinName);
                 if (Status.WORKING == pinStatus)
@@ -36,7 +38,7 @@ public class JobThread {
                     pinAggregatedStatus = Status.IDLE;
                     break;
                 }
-            }
+            };
 
             if (Status.IDLE != pinAggregatedStatus)
                 listener.DataReady();
@@ -45,7 +47,7 @@ public class JobThread {
         }
         catch (Exception e)
         {
-            log.error($"Error of type {e.GetType()}: {e.Message}\n{e.StackTrace}");
+            log.error("Error of type" + e.getClass() +": " + e.getMessage() + "\n"+ Arrays.toString(e.getStackTrace()));
             handler.FailProcessing(e.getMessage());
         }
     }

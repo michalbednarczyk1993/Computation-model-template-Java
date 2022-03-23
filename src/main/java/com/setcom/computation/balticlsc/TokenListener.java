@@ -1,4 +1,4 @@
-package com.setcom.computation.BalticLSC;
+package com.setcom.computation.balticlsc;
 
 public abstract class TokenListener {
 

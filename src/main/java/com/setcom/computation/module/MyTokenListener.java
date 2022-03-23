@@ -1,6 +1,6 @@
 package com.setcom.computation.module;
 
-import com.setcom.computation.BalticLSC.*;
+import com.setcom.computation.balticlsc.*;
 
 
 public class MyTokenListener extends TokenListener {

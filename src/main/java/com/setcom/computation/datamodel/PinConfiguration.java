@@ -1,4 +1,4 @@
-package com.setcom.computation.DataModel;
+package com.setcom.computation.datamodel;
 
 public class PinConfiguration {
 
@@ -12,14 +12,13 @@ public class PinConfiguration {
 
     public PinConfiguration(IConfigurationSection section)
     {
-        this.pinName = sec
-        tion.GetValue<String>("PinName");
+        this.pinName = section.GetValue<String>("PinName");
         this.pinType = section.GetValue<String>("PinType");
         this.isRequired = section.GetValue<string>("IsRequired");
         this.accessType = section.GetValue<string>("AccessType");
         this.dataMultiplicity = (DataMultiplicity)Enum.Parse(typeof(DataMultiplicity),
                 section.GetValue<string>("DataMultiplicity"), true);
-        TokenMultiplicity = (TokenMultiplicity)Enum.Parse(typeof(TokenMultiplicity),
+        tokenMultiplicity = (TokenMultiplicity)Enum.Parse(typeof(TokenMultiplicity),
                 section.GetValue<string>("TokenMultiplicity"), true);
         this.accessCredential = new Dictionary<string, string>();
         foreach (IConfigurationSection aSection in section.GetSection("AccessCredential").GetChildren())

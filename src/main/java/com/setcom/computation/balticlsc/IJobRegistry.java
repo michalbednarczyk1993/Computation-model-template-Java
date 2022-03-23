@@ -1,7 +1,7 @@
-package com.setcom.computation.BalticLSC;
+package com.setcom.computation.balticlsc;
 
-import com.setcom.computation.DataModel.InputTokenMessage;
-import com.setcom.computation.DataModel.Status;
+import com.setcom.computation.datamodel.InputTokenMessage;
+import com.setcom.computation.datamodel.Status;
 import org.javatuples.Pair;
 
 import java.util.List;
@@ -9,7 +9,7 @@ import java.util.List;
 public interface IJobRegistry {
     ///
     /// <param name="pinName"></param>
-    Status GetPinStatus(String pinName);
+    Status GetPinStatus(String pinName) throws InterruptedException;
 
     ///
     /// <param name="pinName"></param>
@@ -21,7 +21,7 @@ public interface IJobRegistry {
 
     ///
     /// <param name="pinName"></param>
-    Pair<List<String>, long[]> GetPinValuesNDim(String pinName);
+    Pair<List<String>, long[]> GetPinValuesNDim(String pinName) throws InterruptedException;
 
     ///
     /// <param name="pinName"></param>

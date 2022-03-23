@@ -1,4 +1,4 @@
-package com.setcom.computation.DataModel;
+package com.setcom.computation.datamodel;
 
 import lombok.Getter;
 import lombok.Setter;
