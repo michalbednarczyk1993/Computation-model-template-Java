@@ -21,7 +21,7 @@ public class JobThread {
         this.handler = handler;
     }
 
-    public void Run(){
+    public void run(){
         try
         {
             listener.DataReceived(pinName);

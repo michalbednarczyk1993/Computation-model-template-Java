@@ -1,9 +1,12 @@
 package com.setcom.computation.apiaccess;
 
 
+import com.setcom.computation.datamodel.TokensAck;
+
+import java.net.http.HttpClient;
 import java.util.List;
 
-public class TokenProxy {
+public class TokensProxy {
     private final HttpClient httpClient;
     private final String batchManagerAckUrl;
     private final String batchManagerTokenUrl;

@@ -8,17 +8,17 @@ import java.util.Enumeration;
 public class InputTokenMessage {
 
     @Getter @Setter
-    public String MsgUid;
+    public String msgUid;
 
     @Getter @Setter
-    public String PinName;
+    public String pinName;
 
     @Getter @Setter
-    public String AccessType;
+    public String accessType;
 
     @Getter @Setter
-    public String Values;
+    public String values;
 
     @Getter @Setter
-    public Enumeration<SeqToken> TokenSeqStack;
+    public Enumeration<SeqToken> tokenSeqStack;
 }

@@ -5,7 +5,7 @@ import lombok.Setter;
 
 import java.util.List;
 
-public class TokenAck {
+public class TokensAck {
     @Getter @Setter
     public List<String> MsgUids;
     @Getter @Setter

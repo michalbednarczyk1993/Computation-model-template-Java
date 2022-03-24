@@ -11,6 +11,7 @@ import java.util.concurrent.Semaphore;
 
 @Slf4j
 public class JobRegistry implements IJobRegistry {
+
     private final List<JobThread> jobThreads;
 
     private Dictionary<String, List<InputTokenMessage>> tokens;
@@ -44,8 +45,7 @@ public class JobRegistry implements IJobRegistry {
         semaphore = new Semaphore(1);
     }
 
-    public short RegisterThread(JobThread thread) throws InterruptedException {
-
+    public short registerThread(JobThread thread) throws InterruptedException {
         semaphore.wait();
         try
         {
@@ -74,7 +74,7 @@ public class JobRegistry implements IJobRegistry {
             if (null != finalToken)
             {
                 long maxCount = 1;
-                for (SeqToken token : finalToken.TokenSeqStack)
+                for (SeqToken token : finalToken.tokenSeqStack)
                 maxCount *= token.No + 1;
                 if (tokens.get(pinName).Count == maxCount)
                     return Status.COMPLETED;
@@ -129,9 +129,9 @@ public class JobRegistry implements IJobRegistry {
 
             long[] maxTableCounts = new long[tokens.get(pinName).FirstOrDefault().TokenSeqStack.Count()];
             for (InputTokenMessage message : tokens.get(pinName))
-            for (int i = 0; i < message.TokenSeqStack.Count(); i++) // TODO Enumeration nie ma niczego co by pasowało do tego. Poszukać innego zasobu.
-                if (maxTableCounts[i] < message.TokenSeqStack.ToList()[i].No)
-                    maxTableCounts[i] = message.TokenSeqStack.ToList()[i].No;
+            for (int i = 0; i < message.tokenSeqStack.Count(); i++) // TODO Enumeration nie ma niczego co by pasowało do tego. Poszukać innego zasobu.
+                if (maxTableCounts[i] < message.tokenSeqStack.ToList()[i].No)
+                    maxTableCounts[i] = message.tokenSeqStack.ToList()[i].No;
 
             long allTokenCount = 1;
             for (long index : maxTableCounts)
@@ -143,13 +143,13 @@ public class JobRegistry implements IJobRegistry {
             {
                 long index = 0;
                 long product = 1;
-                for (int i = 0; i < message.TokenSeqStack.Count(); i++)
+                for (int i = 0; i < message.tokenSeqStack.Count(); i++)
                 {
                     index += maxTableCounts[i] * product;
                     product *= maxTableCounts[i];
                 }
 
-                result[index] = message.Values;
+                result[index] = message.values;
             }
 
             return new Pair<result.ToList(), maxTableCounts>();
@@ -219,7 +219,7 @@ public class JobRegistry implements IJobRegistry {
         }
     }
 
-    public JobStatus GetJobStatus() {
+    public JobStatus getJobStatus() {
         try {
             semaphore.wait();
             return status;
@@ -333,6 +333,6 @@ public class JobRegistry implements IJobRegistry {
     }
 
     public void RegisterToken(InputTokenMessage msg) {
-        tokens.get(msg.PinName).Add(msg);
+        tokens.get(msg.pinName).add(msg);
     }
 }

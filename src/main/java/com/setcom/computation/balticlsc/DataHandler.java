@@ -1,13 +1,17 @@
 package com.setcom.computation.balticlsc;
 
+import com.setcom.computation.apiaccess.TokensProxy;
 import org.javatuples.Pair;
 import org.springframework.lang.Nullable;
 
 import java.util.Dictionary;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class DataHandler implements IDataHandler{
-    private Dictionary<String, DataHandle> dataHandles;
+
+    private final HashMap<String, DataHandle> dataHandles;
     private final TokensProxy tokensProxy;
     private final JobRegistry registry;
     private final IConfiguration configuration;
@@ -20,11 +24,10 @@ public class DataHandler implements IDataHandler{
         this.registry = registry;
         this.tokensProxy = new TokensProxy();
         this.configuration = configuration;
-        this.dataHandles = new Dictionary<string, DataHandle>();
+        this.dataHandles = new HashMap<>();
     }
 
-    public String ObtainDataItem(String pinName)
-    {
+    public String ObtainDataItem(String pinName) {
         List<String> values;
         long[] sizes;
         //(values, sizes) = ObtainDataItemsNDim(pinName); //TODO how to handle it?
@@ -129,12 +132,12 @@ public class DataHandler implements IDataHandler{
     ///
     /// <param name="pinName"></param>
     /// <param name="handle"></param>
-    public short CheckConnection(String pinName, @Nullable Dictionary<String, String> handle)
+    public short CheckConnection(String pinName, @Nullable Map<String, String> handle)
     {
         try
         {
             DataHandle dHandle = GetDataHandle(pinName);
-            return dHandle.CheckConnection(handle);
+            return dHandle.checkConnection(handle);
         }
         catch (ArgumentException)
         {

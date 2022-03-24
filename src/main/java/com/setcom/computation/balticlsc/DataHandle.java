@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.Nullable;
 
 import java.util.Dictionary;
+import java.util.HashMap;
 
 @Slf4j
 public abstract class DataHandle {
@@ -38,7 +39,7 @@ public abstract class DataHandle {
 
     }
 
-    public abstract short CheckConnection(@Nullable Dictionary<String, String> handle);
+    public abstract short checkConnection(@Nullable HashMap<String, String> handle);
 
     ///
     /// <param name="handle"></param>
