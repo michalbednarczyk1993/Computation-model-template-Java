@@ -3,7 +3,7 @@ package com.setcom.computation.datamodel;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.Enumeration;
+import java.util.ArrayList;
 
 public class InputTokenMessage {
 
@@ -20,5 +20,5 @@ public class InputTokenMessage {
     public String values;
 
     @Getter @Setter
-    public Enumeration<SeqToken> tokenSeqStack;
+    public ArrayList<SeqToken> tokenSeqStack;
 }

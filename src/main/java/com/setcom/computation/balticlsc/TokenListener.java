@@ -10,8 +10,8 @@ public abstract class TokenListener {
         this.data = data;
     }
 
-    //TODO what is that "<param name" for?
-    /// <param name="pinName"></param> // C# element
+    // This is C# XML documentation format
+    /// <param name="pinName"></param>
     public abstract void DataReceived(String pinName);
 
     /// <param name="pinName"></param>

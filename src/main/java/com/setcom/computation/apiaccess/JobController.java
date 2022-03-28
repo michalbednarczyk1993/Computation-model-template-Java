@@ -10,19 +10,16 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.scheduling.config.Task;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Hashtable;
-import java.util.Map;
 
 
 @Slf4j
 @RestController
 @RequestMapping
-public class JobController {
+public class  JobController {
     private final JobRegistry registry;
     private final DataHandler handler;
     private final TokenListener listener;
@@ -54,8 +51,15 @@ public class JobController {
                     case 0:
                         JobThread jobThread = new JobThread(value.pinName, listener, registry, handler);
                         registry.registerThread(jobThread);
+                        var threadTask = new Thread();
+                        threadTask.start();
+                        /*
+                        // Nie jestem pewien czy to dobrze zrobiłem.
+                        // Nie wiem w ogóle czy to nie jest tak, że Spring ogarnia takie rzeczy i czy nie mogę po prostu
+                        // wrzucic jobThread::run
                         var task = new Task(() => jobThread.run());
                         task.Start();
+                         */
                         return new ResponseEntity<>(HttpStatus.OK);
                     case -1:
                         retMessage = "No response " + value.pinName;
@@ -70,7 +74,7 @@ public class JobController {
                         log.error(retMessage);
                         return new ResponseEntity<>(retMessage, HttpStatus.UNAUTHORIZED);
                     default:
-                        return new ResponseEntity<>(retMessage, HttpStatus.BAD_REQUEST);
+                        return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
                 }
             } catch (Exception e) {
                 log.error(String.format(

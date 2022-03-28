@@ -15,9 +15,9 @@ public class TokensProxy {
     public TokensProxy()
     {
         httpClient = new HttpClient();
-        senderUid = Environment.GetEnvironmentVariable("SYS_MODULE_INSTANCE_UID");
-        batchManagerAckUrl = Environment.GetEnvironmentVariable("SYS_BATCH_MANAGER_ACK_ENDPOINT");
-        batchManagerTokenUrl = Environment.GetEnvironmentVariable("SYS_BATCH_MANAGER_TOKEN_ENDPOINT");
+        senderUid = System.getenv("SYS_MODULE_INSTANCE_UID");
+        batchManagerAckUrl = System.getenv("SYS_BATCH_MANAGER_ACK_ENDPOINT");
+        batchManagerTokenUrl = System.getenv("SYS_BATCH_MANAGER_TOKEN_ENDPOINT");
     }
 
     public HttpStatusCode SendOutputToken(String pinName, String values, String baseMsgUid, boolean isFinal)

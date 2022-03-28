@@ -3,57 +3,60 @@ package com.setcom.computation.balticlsc;
 import com.setcom.computation.datamodel.*;
 import lombok.extern.slf4j.Slf4j;
 import org.javatuples.Pair;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.configurationprocessor.json.JSONException;
+import org.springframework.boot.configurationprocessor.json.JSONObject;
 import org.springframework.core.env.Environment;
+import org.springframework.stereotype.Service;
 
-import java.util.Dictionary;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.Semaphore;
+import java.util.stream.Stream;
 
 @Slf4j
+@Service
 public class JobRegistry implements IJobRegistry {
 
-    private final List<JobThread> jobThreads;
+    private volatile List<JobThread> jobThreads;
+    private final HashMap<String, List<InputTokenMessage>> tokens;
+    private final HashMap<String, Object> variables;
+    private final JobStatus status;
+    private static volatile List<PinConfiguration> pins;
 
-    private Dictionary<String, List<InputTokenMessage>> tokens;
-    private Dictionary<String, Object> variables;
-    private JobStatus status;
-    private List<PinConfiguration> pins;
+    private final Semaphore semaphore;
 
-    private Semaphore semaphore;
-
-    public JobRegistry(IConfiguration config){
-        try
-        {
+    @Autowired
+    public JobRegistry(JSONObject config) throws JSONException {
+        try {
             pins = ConfigurationHandle.GetPinsConfiguration(config);
-        }
-        catch (Exception e)
-        {
+        } catch (JSONException e) {
             log.error("Error while parsing configuration.");
             throw e;
         }
 
-        jobThreads = new List<JobThread>();
-        tokens = new Dictionary<String, List<InputTokenMessage>>();
-        foreach (PinConfiguration pc in _pins.FindAll(p => "input" == p.PinType))
-        tokens[pc.PinName] = new List<InputTokenMessage>();
-        variables = new Dictionary<String, Object>();
-        jobInstanceUid = System.getenv("SYS_MODULE_INSTANCE_UID");
-        status = new JobStatus()
-        {
-            //JobInstanceUid = Environment.GetEnvironmentVariable("SYS_MODULE_INSTANCE_UID")
-        };
+        jobThreads = new ArrayList<>();
+        tokens = new HashMap<>();
+        variables = new HashMap<>();
+
+        for (PinConfiguration pc : pins) {
+            if (pc.pinType.equals("input")) {
+                tokens.put(pc.pinName, new LinkedList<>());
+            }
+        }
+
+        status = new JobStatus();
+        status.setJobInstanceUid(System.getenv("SYS_MODULE_INSTANCE_UID"));
         semaphore = new Semaphore(1);
     }
 
-    public short registerThread(JobThread thread) throws InterruptedException {
+    public void registerThread(JobThread thread) throws InterruptedException {
         semaphore.wait();
-        try
-        {
+        try {
             jobThreads.add(thread);
-            return 0;
-        }
-        finally
-        {
+        } finally {
             semaphore.release();
         }
     }
@@ -61,38 +64,32 @@ public class JobRegistry implements IJobRegistry {
     ///
     /// <param name="pinName"></param>
     public Status GetPinStatus(String pinName) throws InterruptedException {
-
         semaphore.wait();
-        try
-        {
-            if (0 == tokens.get(pinName).Count)
+        try {
+            if (0 == tokens.get(pinName).size())
                 return Status.IDLE;
-            if (TokenMultiplicity.SINGLE == GetPinConfigurationInternal(pinName).TokenMultiplicity)
+            if (TokenMultiplicity.SINGLE == GetPinConfigurationInternal(pinName).tokenMultiplicity)
                 return Status.COMPLETED;
-            InputTokenMessage finalToken =
-                    tokens.get(pinName).Find(t => !t.TokenSeqStack.ToList().Exists(s => !s.IsFinal));
-            if (null != finalToken)
-            {
-                long maxCount = 1;
-                for (SeqToken token : finalToken.tokenSeqStack)
-                maxCount *= token.No + 1;
-                if (tokens.get(pinName).Count == maxCount)
-                    return Status.COMPLETED;
-            }
 
+            InputTokenMessage finalToken = tokens.get(pinName).
+                    stream().filter((t)-> t.tokenSeqStack.stream().allMatch((s)-> s.isFinal)).findFirst().orElseThrow();
+
+            long maxCount = 1;
+            for (SeqToken token : finalToken.tokenSeqStack)
+            maxCount *= token.no + 1;
+            if (tokens.get(pinName).size() == maxCount)
+                return Status.COMPLETED;
             return Status.WORKING;
-        }
-        finally
-        {
+        } finally {
             semaphore.release();
         }
     }
 
-    public String GetPinValue(String pinName)
-    {
-        List<String> values;
-        long[] sizes;
-        (values, sizes) = GetPinValuesNDim(pinName);
+    public String GetPinValue(String pinName) throws Exception {
+        Pair<List<String>, long[]> pair = GetPinValuesNDim(pinName);
+        List<String> values = pair.getValue0();
+        long[] sizes = pair.getValue1();
+
         if (null == values || 0 == values.size())
             return null;
         if (null == sizes && 1 == values.size())
@@ -100,13 +97,13 @@ public class JobRegistry implements IJobRegistry {
         throw new Exception("Improper call - more than one token exists for the pin");
     }
 
-    public List<String> GetPinValues(String pinName)
-    {
-        List<String> values;
-        long[] sizes;
-        (values, sizes) = GetPinValuesNDim(pinName);
-        if (1 == sizes?.Length)
-        return values;
+    public List<String> GetPinValues(String pinName) throws Exception {
+        Pair<List<String>, long[]> pair = GetPinValuesNDim(pinName);
+        List<String> values = pair.getValue0();
+        long[] sizes = pair.getValue1();
+
+        if (sizes != null && sizes.length == 1)
+            return values;
         throw new Exception("Improper call - more than one dimension exists for the pin");
     }
 
@@ -234,7 +231,7 @@ public class JobRegistry implements IJobRegistry {
     ///
     /// <param name="name"></param>
     /// <param name="value"></param>
-    public void SetVariable(String name, Object value) {
+    public void SetVariable(String name, String value) {
         try {
             semaphore.wait();
             variables[name] = value;

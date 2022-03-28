@@ -13,11 +13,11 @@ public interface IJobRegistry {
 
     ///
     /// <param name="pinName"></param>
-    String GetPinValue(String pinName);
+    String GetPinValue(String pinName) throws Exception;
 
     ///
     /// <param name="pinName"></param>
-    List<String> GetPinValues(String pinName);
+    List<String> GetPinValues(String pinName) throws Exception;
 
     ///
     /// <param name="pinName"></param>
