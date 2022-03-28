@@ -12,12 +12,12 @@ public abstract class TokenListener {
 
     // This is C# XML documentation format
     /// <param name="pinName"></param>
-    public abstract void DataReceived(String pinName);
+    public abstract void dataReceived(String pinName);
 
     /// <param name="pinName"></param>
-    public abstract void OptionalDataReceived(String pinName);
+    public abstract void optionalDataReceived(String pinName);
 
-    public abstract void DataReady();
+    public abstract void dataReady();
 
-    public abstract void DataComplete();
+    public abstract void dataComplete();
 }

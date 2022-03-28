@@ -1,5 +1,10 @@
 package com.setcom.computation.datamodel;
 
+import org.springframework.boot.configurationprocessor.json.JSONException;
+import org.springframework.boot.configurationprocessor.json.JSONObject;
+
+import java.util.HashMap;
+
 public class PinConfiguration {
 
     public final String pinName;
@@ -8,20 +13,21 @@ public class PinConfiguration {
     public final String accessType;
     public final DataMultiplicity dataMultiplicity;
     public final TokenMultiplicity tokenMultiplicity;
-    public final Dictionary<String, String> accessCredential;
+    public final HashMap<String, String> accessCredential;
 
-    public PinConfiguration(IConfigurationSection section)
-    {
-        this.pinName = section.GetValue<String>("PinName");
-        this.pinType = section.GetValue<String>("PinType");
-        this.isRequired = section.GetValue<string>("IsRequired");
-        this.accessType = section.GetValue<string>("AccessType");
+    //TODO bez testów nie zrozumiem tego
+
+    public PinConfiguration(JSONObject section) throws JSONException {
+        this.pinName = section.getString("PinName");
+        this.pinType = section.getString("PinType");
+        this.isRequired = section.getString("IsRequired");
+        this.accessType = section.getString("AccessType");
         this.dataMultiplicity = (DataMultiplicity)Enum.Parse(typeof(DataMultiplicity),
-                section.GetValue<string>("DataMultiplicity"), true);
+                section.getString("DataMultiplicity"), true);
         tokenMultiplicity = (TokenMultiplicity)Enum.Parse(typeof(TokenMultiplicity),
-                section.GetValue<string>("TokenMultiplicity"), true);
-        this.accessCredential = new Dictionary<string, string>();
-        foreach (IConfigurationSection aSection in section.GetSection("AccessCredential").GetChildren())
-        this.accessCredential.Add(aSection.Key,aSection.Value);
+                section.getString("TokenMultiplicity"), true);
+        this.accessCredential = new HashMap<>();
+        for (JSONObject aSection : section.getJSONObject("AccessCredential").GetChildren())
+            this.accessCredential.put(aSection.Key,aSection.Value);
     }
 }

@@ -24,9 +24,9 @@ public class JobThread {
     public void run(){
         try
         {
-            listener.DataReceived(pinName);
+            listener.dataReceived(pinName);
             if ("true".equals(registry.GetPinConfiguration(pinName).isRequired))
-                listener.OptionalDataReceived(pinName);
+                listener.optionalDataReceived(pinName);
             Status pinAggregatedStatus = Status.COMPLETED;
             for(String pinName : registry.GetStrongPinNames())
             {
@@ -41,9 +41,9 @@ public class JobThread {
             };
 
             if (Status.IDLE != pinAggregatedStatus)
-                listener.DataReady();
+                listener.dataReady();
             if (Status.COMPLETED == pinAggregatedStatus)
-                listener.DataComplete();
+                listener.dataComplete();
         }
         catch (Exception e)
         {

@@ -9,25 +9,25 @@ public class MyTokenListener extends TokenListener {
                 super(registry, data);
         }
 
-        public void DataReceived(String pinName)
+        public void dataReceived(String pinName)
         {
             // Place your code here:
 
         }
 
-        public void OptionalDataReceived(String pinName)
+        public void optionalDataReceived(String pinName)
         {
             // Place your code here:
 
         }
 
-        public void DataReady()
+        public void dataReady()
         {
             // Place your code here:
 
         }
 
-        public void DataComplete()
+        public void dataComplete()
         {
             // Place your code here:
 
