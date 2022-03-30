@@ -1,6 +1,7 @@
 package com.setcom.computation.dataaccess;
 
 import com.setcom.computation.balticlsc.DataHandle;
+import org.springframework.boot.configurationprocessor.json.JSONObject;
 
 import java.util.Dictionary;
 
@@ -11,7 +12,7 @@ public class MangoDbDataHandle extends DataHandle {
     private IMongoDatabase mongoDatabase;
     private IMongoCollection<BsonDocument> mongoCollection;
 
-    public MongoDbHandle(String pinName, IConfiguration configuration) : base(pinName, configuration)
+    public MongoDbHandle(String pinName, JSONObject configuration) : base(pinName, configuration)
     {
         connectionString = $"mongodb://{PinConfiguration.AccessCredential["User"]}" +
             $":{PinConfiguration.AccessCredential["Password"]}" +
@@ -45,7 +46,7 @@ public class MangoDbDataHandle extends DataHandle {
                     var document = mongoCollection.Find(filter).FirstOrDefault();
                     if (document != null)
                     {
-                        localPath = DownloadSingleFile(document, LocalPath);
+                        localPath = DownloadSingleFile(document, this.localPath);
                         Log.Information($"Downloading object with id: {id} successful.");
                     }
                     else

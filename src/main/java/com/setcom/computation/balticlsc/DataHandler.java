@@ -2,6 +2,7 @@ package com.setcom.computation.balticlsc;
 
 import com.setcom.computation.apiaccess.TokensProxy;
 import org.javatuples.Pair;
+import org.springframework.boot.configurationprocessor.json.JSONObject;
 import org.springframework.lang.Nullable;
 
 import java.util.Dictionary;
@@ -14,12 +15,12 @@ public class DataHandler implements IDataHandler{
     private final HashMap<String, DataHandle> dataHandles;
     private final TokensProxy tokensProxy;
     private final JobRegistry registry;
-    private final IConfiguration configuration;
+    private final JSONObject configuration;
 
     ///
     /// <param name="registry"></param>
     /// <param name="configuration"></param>
-    public DataHandler(JobRegistry registry, IConfiguration configuration)
+    public DataHandler(JobRegistry registry, JSONObject configuration)
     {
         this.registry = registry;
         this.tokensProxy = new TokensProxy();

@@ -28,6 +28,6 @@ public class PinConfiguration {
                 section.getString("TokenMultiplicity"), true);
         this.accessCredential = new HashMap<>();
         for (JSONObject aSection : section.getJSONObject("AccessCredential").GetChildren())
-            this.accessCredential.put(aSection.Key,aSection.Value);
+            this.accessCredential.put(aSection.keys().next().toString(), aSection.toString());
     }
 }

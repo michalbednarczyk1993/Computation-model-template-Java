@@ -2,16 +2,23 @@ package com.setcom.computation.balticlsc;
 
 import com.setcom.computation.datamodel.PinConfiguration;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.configurationprocessor.json.JSONException;
+import org.springframework.boot.configurationprocessor.json.JSONObject;
 import org.springframework.lang.Nullable;
+import org.springframework.util.FileSystemUtils;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.Dictionary;
 import java.util.HashMap;
 
 @Slf4j
 public abstract class DataHandle {
 
-    protected final PinConfiguration pinConfiguration;
-    protected final String LocalPath;
+    protected PinConfiguration pinConfiguration = null;
+    protected final String localPath;
 
     private static final String BALTIC_DATA_PATH = "/BalticLSC/data";
     private static final String BALTIC_DATA_PREFIX = "BalticLSC-";
@@ -20,23 +27,23 @@ public abstract class DataHandle {
     ///
     /// <param name="pinName"></param>
     /// <param name="configuration"></param>
-    protected DataHandle(String pinName, IConfiguration configuration)
+    protected DataHandle(String pinName, JSONObject configuration)
     {
-        LocalPath = Environment.GetEnvironmentVariable("LOCAL_TMP_PATH") ?? "/balticLSC_tmp";
+        localPath = System.getenv("LOCAL_TMP_PATH") != null ?
+                System.getenv("LOCAL_TMP_PATH") : "/balticLSC_tmp";
 
-        try
-        {
-            PinConfiguration =
-                    ConfigurationHandle.GetPinsConfiguration(configuration).Find(x => x.PinName == pinName);
-
-        }
-        catch (Exception)
-        {
-            Log.Error("Error while parsing configuration.");
+        try {
+            pinConfiguration = ConfigurationHandle.GetPinsConfiguration(configuration).
+                    stream().filter((x)-> x.pinName.equals(pinName)).findAny().orElse(null);
+        } catch (JSONException e) {
+            log.error("Error while parsing configuration.");
+            log.error(e.toString());
         }
 
-        Directory.CreateDirectory(LocalPath);
-
+        File dir = new File(localPath);
+        if (!dir.exists()) {
+            log.info("DataHandle create directory with localPath: " + dir.mkdir());
+        }
     }
 
     public abstract short checkConnection(@Nullable HashMap<String, String> handle);
@@ -51,20 +58,13 @@ public abstract class DataHandle {
 
     protected void ClearLocal()
     {
-        try
-        {
-            if (Directory.Exists(LocalPath))
-            {
-                Directory.Delete(LocalPath, true);
+        try {
+            File directory = new File(localPath);
+            if (directory.exists()) {
+                FileSystemUtils.deleteRecursively(Paths.get(localPath));
             }
-            else if (File.Exists(LocalPath))
-            {
-                File.Delete(LocalPath);
-            }
-        }
-        catch (Exception e)
-        {
-            log.error("Error while clearing local memory: " + e;
+        } catch (IOException | SecurityException e) {
+            log.error("Error while clearing local memory:  " + e.toString());
         }
     }
 
