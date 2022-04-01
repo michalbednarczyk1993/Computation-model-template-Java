@@ -57,7 +57,7 @@ public class MangoDbDataHandle extends DataHandle {
                 catch (Exception)
                 {
                     Log.Error($"Downloading object with id {id} failed.");
-                    ClearLocal();
+                    clearLocal();
                     throw;
                 }
 
@@ -76,13 +76,13 @@ public class MangoDbDataHandle extends DataHandle {
                     foreach (var document in documents)
                     DownloadSingleFile(document, localPath);
 
-                    AddGuidToFilesName(localPath);
+                    addGuidToFilesName(localPath);
                     Log.Information($"Downloading all files from {collectionName} successful.");
                 }
                 catch (Exception)
                 {
                     Log.Error($"Downloading all files from collection {collectionName} failed.");
-                    ClearLocal();
+                    clearLocal();
                     throw;
                 }
 
@@ -94,7 +94,7 @@ public class MangoDbDataHandle extends DataHandle {
     }
 
     @Override
-    public Dictionary<String, String> Upload(String localPath)
+    public Dictionary<String, String> upload(String localPath)
     {
         if ("input" == PinConfiguration.PinType)
             throw new Exception("Upload cannot be called for input pins");
@@ -130,7 +130,7 @@ public class MangoDbDataHandle extends DataHandle {
                 case DataMultiplicity.Multiple:
                 {
                     Log.Information($"Uploading directory from {localPath} to collection {collectionName}");
-                    var files = GetAllFiles(localPath);
+                    var files = getAllFiles(localPath);
                     var handleList = new List<Dictionary<string, string>>();
 
                     foreach (var bsonDocument in files.Select(file => GetBsonDocument(file.FullName)))
@@ -160,7 +160,7 @@ public class MangoDbDataHandle extends DataHandle {
         }
         finally
         {
-            ClearLocal();
+            clearLocal();
         }
     }
 

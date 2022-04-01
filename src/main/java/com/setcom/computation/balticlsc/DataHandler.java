@@ -82,7 +82,7 @@ public class DataHandler implements IDataHandler{
         if ("Direct" == _registry.GetPinConfiguration(pinName).AccessType)
             return SendToken(pinName, data, isFinal, msgUid);
         DataHandle dHandle = GetDataHandle(pinName);
-        Dictionary<string,string> newHandle = dHandle.Upload(data);
+        Dictionary<string,string> newHandle = dHandle.upload(data);
         return SendToken(pinName, JsonConvert.SerializeObject(newHandle), isFinal, msgUid);
     }
 

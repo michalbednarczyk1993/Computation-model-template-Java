@@ -2,17 +2,18 @@ package com.setcom.computation.balticlsc;
 
 import com.setcom.computation.datamodel.PinConfiguration;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.tomcat.jni.FileInfo;
 import org.springframework.boot.configurationprocessor.json.JSONException;
 import org.springframework.boot.configurationprocessor.json.JSONObject;
 import org.springframework.lang.Nullable;
 import org.springframework.util.FileSystemUtils;
+import org.springframework.web.bind.annotation.PathVariable;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Dictionary;
-import java.util.HashMap;
+import java.util.*;
 
 @Slf4j
 public abstract class DataHandle {
@@ -50,13 +51,13 @@ public abstract class DataHandle {
 
     ///
     /// <param name="handle"></param>
-    public abstract String Download(Dictionary<String, String> handle);
+    public abstract String Download(HashMap<String, String> handle);
 
     ///
     /// <param name="localPath"></param>
-    public abstract Dictionary<String, String> Upload(String localPath);
+    public abstract HashMap<String, String> upload(String localPath);
 
-    protected void ClearLocal()
+    protected void clearLocal()
     {
         try {
             File directory = new File(localPath);
@@ -68,39 +69,57 @@ public abstract class DataHandle {
         }
     }
 
-    protected void AddGuidToFilesName(String directoryPath)
-    {
-        var files = new DirectoryInfo(directoryPath).GetFiles();
-        for (var file : files)
-        {
-            var filePath = file.FullName;
-            var fileName = Path.GetFileName(filePath);
-            var newFileName = GetNameWithGuid(fileName);
-            File.Move(filePath,Path.Combine(directoryPath, newFileName));
+    protected void addGuidToFilesName(String directoryPath) {
+        var files = new File(directoryPath).listFiles();
+        if (files == null) {
+            log.error("Provided directory is invalid or does not contain any files and subdirectories");
+            return;
+        }
+
+        for (var file : files) {
+            Path fullPath = Paths.get(file.getPath());
+            var fileName = file.getName();
+            var newName = getNameWithGuid(fileName);
+            boolean result = file.renameTo(new File(fullPath.resolve(newName).toString()));
+            if (!result)
+                log.error("Changing file directory failed");
         }
     }
 
-    private String GetNameWithGuid(String name)
+    private String getNameWithGuid(String name)
     {
-        if(name.StartsWith(BalticDataPrefix))
+        if(name.startsWith(BALTIC_DATA_PREFIX))
         {
-            return name.Remove(BalticDataPrefix.Length,GuidLength).Insert(BalticDataPrefix.Length,Guid.NewGuid().ToString().Substring(0, GuidLength));
+            return new StringBuilder(name).delete(BALTIC_DATA_PREFIX.length(), BALTIC_DATA_PREFIX.length() + GUID_LENGTH).
+                    insert(BALTIC_DATA_PREFIX.length(), UUID.randomUUID().toString().substring(0, GUID_LENGTH)).toString();
         }
-        return BalticDataPrefix + Guid.NewGuid().ToString().Substring(0, GuidLength)+"-" + name;
+        return BALTIC_DATA_PREFIX + UUID.randomUUID().toString().substring(0, GUID_LENGTH) + "-" + name;
     }
 
-    protected List<FileInfo> GetAllFiles(String directoryPath)
+    protected List<FileInfo> getAllFiles(String directoryPath)
     {
-        if (!Directory.Exists(directoryPath))
-        {
-            return new List<FileInfo>();
+        try {
+            File directory = new File(localPath);
+            if (!directory.exists()) {
+                return new ArrayList<>();
+            }
+        } catch (SecurityException e) {
+            log.error(e.toString());
         }
 
-        var directoryInfo = new DirectoryInfo(directoryPath);
-        var files = directoryInfo.GetFiles().ToList();
-        var directories = directoryInfo.GetDirectories().ToList();
+        var dirInfo = new File(directoryPath);
+        var files = Arrays.asList(Objects.requireNonNull(dirInfo.listFiles()));
+        var dirs = Arrays.asList(Objects.requireNonNull(dirInfo.list()));
 
-        directories.ForEach(x => files.AddRange(GetAllFiles(x.FullName)));
+        dirs.forEach((x)->files.);
+
+//        var directoryInfo = new DirectoryInfo(directoryPath);
+//        var files = directoryInfo.GetFiles().ToList();
+//        var directories = directoryInfo.GetDirectories().ToList();
+
+
+
+            directories.ForEach((x)-> files.AddRange(getAllFiles(x.FullName)));
 
         return files;
     }
