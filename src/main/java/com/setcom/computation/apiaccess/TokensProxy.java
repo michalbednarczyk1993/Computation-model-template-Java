@@ -1,63 +1,82 @@
 package com.setcom.computation.apiaccess;
 
-
+import com.setcom.computation.datamodel.OutputTokenMessage;
 import com.setcom.computation.datamodel.TokensAck;
+import com.google.gson.Gson;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.http.HttpResponse;
+import org.apache.http.ProtocolVersion;
+import org.apache.http.StatusLine;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.message.BasicStatusLine;
 
-import java.net.http.HttpClient;
+import java.io.IOException;
 import java.util.List;
 
+@Slf4j
 public class TokensProxy {
-    private final HttpClient httpClient;
+    private final CloseableHttpClient httpClient;
     private final String batchManagerAckUrl;
     private final String batchManagerTokenUrl;
     private final String senderUid;
 
+
     public TokensProxy()
     {
-        httpClient = new HttpClient();
+        httpClient = HttpClientBuilder.create().build();
         senderUid = System.getenv("SYS_MODULE_INSTANCE_UID");
         batchManagerAckUrl = System.getenv("SYS_BATCH_MANAGER_ACK_ENDPOINT");
         batchManagerTokenUrl = System.getenv("SYS_BATCH_MANAGER_TOKEN_ENDPOINT");
+
     }
 
-    public HttpStatusCode SendOutputToken(String pinName, String values, String baseMsgUid, boolean isFinal)
-    {
-        var xOutputToken = new OutputTokenMessage
-        {
-            PinName = pinName,
-                    SenderUid = _senderUid,
-                    Values = values,
-                    BaseMsgUid = baseMsgUid,
-                    IsFinal = isFinal
-        };
+    public StatusLine SendOutputToken(String pinName, String values, String baseMsgUid, boolean isFinal) {
+        var xOutputToken = new OutputTokenMessage(pinName, senderUid, values, baseMsgUid, isFinal);
+        HttpPost postRequest = new HttpPost(batchManagerTokenUrl);
+        StatusLine status;
 
-        var serializedXOutputToken = JsonConvert.SerializeObject(xOutputToken);
-        var data = new StringContent(serializedXOutputToken, Encoding.UTF8, "application/json");
-        var result = httpClient.PostAsync(_batchManagerTokenUrl, data).Result.StatusCode;
+        try {
+            var serializedXOutputToken = new StringEntity(new Gson().toJson(xOutputToken));
 
-        return result;
+            postRequest.addHeader("content-type", "appliaction/json");
+            postRequest.setEntity(serializedXOutputToken);
+            HttpResponse result = httpClient.execute(postRequest);
+            status = result.getStatusLine();
+        } catch (IOException e) {
+            log.error(e.toString());
+            status = new BasicStatusLine(
+                    new ProtocolVersion("HTTP", 2, 0), 400, e.toString());
+        }
+
+        return status;
     }
 
-    public HttpStatusCode SendAckToken(List<String> msgUids, boolean isFinal, String note)  {
+    public StatusLine SendAckToken(List<String> msgUids, boolean isFinal, String note)  {
         return SendAckToken(msgUids, isFinal, false, note);
     }
 
-    public HttpStatusCode SendAckToken(List<String> msgUids, boolean isFinal, boolean isFailed, String note)
-    {
-        var ackToken = new TokensAck
-        {
-            SenderUid = _senderUid,
-                    MsgUids = msgUids,
-                    IsFinal = isFinal,
-                    IsFailed = isFailed,
-                    Note = note
-        };
+    public StatusLine SendAckToken(List<String> msgUids, boolean isFinal, boolean isFailed, String note) {
+        var ackToken = new TokensAck(msgUids, senderUid, note, isFailed, isFinal);
+        HttpPost postRequest = new HttpPost(batchManagerAckUrl);
+        StatusLine status;
 
-        var serializedAckToken = JsonConvert.SerializeObject(ackToken);
-        var data = new StringContent(serializedAckToken, Encoding.UTF8, "application/json");
+        try {
+            var serializedAckToken = new StringEntity(new Gson().toJson(ackToken));
 
-        var result = httpClient.PostAsync(batchManagerAckUrl, data).Result.StatusCode;
+            postRequest.addHeader("content-type", "application/json");
+            postRequest.setEntity(serializedAckToken);
+            HttpResponse result = httpClient.execute(postRequest);
+            status = result.getStatusLine();
 
-        return result;
+        } catch (IOException e) {
+            log.error(e.toString());
+            status = new BasicStatusLine(
+                    new ProtocolVersion("HTTP", 2, 0), 400, e.toString());
+        }
+
+        return status;
     }
 }

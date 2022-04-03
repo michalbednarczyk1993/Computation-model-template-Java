@@ -57,6 +57,8 @@ public class  JobController {
                         // Nie jestem pewien czy to dobrze zrobiłem.
                         // Nie wiem w ogóle czy to nie jest tak, że Spring ogarnia takie rzeczy i czy nie mogę po prostu
                         // wrzucic jobThread::run
+                        // Update (29.03.2022): Nie mogę, Spring kolejkuje sam wątki (wątek per request) ale beany muszą
+                        // być bezstanowe
                         var task = new Task(() => jobThread.run());
                         task.Start();
                          */

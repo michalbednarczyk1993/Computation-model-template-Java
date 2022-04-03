@@ -1,21 +1,23 @@
 package com.setcom.computation.datamodel;
 
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
+@NoArgsConstructor(access = AccessLevel.PUBLIC)
+@AllArgsConstructor(access = AccessLevel.PUBLIC)
 public class OutputTokenMessage {
     @Getter @Setter
-    public String PinName;
+    public String pinName;
 
     @Getter @Setter
-    public String SenderUid;
+    public String senderUid;
 
     @Getter @Setter
-    public String Values;
+    public String values;
 
     @Getter @Setter
-    public String BaseMsgUid;
+    public String baseMsgUid;
 
     @Getter @Setter
-    public boolean IsFinal;
+    public boolean isFinal;
+
 }

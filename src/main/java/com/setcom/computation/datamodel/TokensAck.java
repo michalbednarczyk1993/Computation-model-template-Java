@@ -1,10 +1,11 @@
 package com.setcom.computation.datamodel;
 
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 import java.util.List;
 
+@NoArgsConstructor(access = AccessLevel.PUBLIC)
+@AllArgsConstructor(access = AccessLevel.PUBLIC)
 public class TokensAck {
     @Getter @Setter
     public List<String> MsgUids;
