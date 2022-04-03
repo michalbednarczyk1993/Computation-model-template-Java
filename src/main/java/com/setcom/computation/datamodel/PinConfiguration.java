@@ -18,16 +18,16 @@ public class PinConfiguration {
     //TODO bez testów nie zrozumiem tego
 
     public PinConfiguration(JSONObject section) throws JSONException {
-//        this.pinName = section.getString("PinName");
-//        this.pinType = section.getString("PinType");
-//        this.isRequired = section.getString("IsRequired");
-//        this.accessType = section.getString("AccessType");
-//        this.dataMultiplicity = (DataMultiplicity)Enum.Parse(typeof(DataMultiplicity),
-//                section.getString("DataMultiplicity"), true);
-//        tokenMultiplicity = (TokenMultiplicity)Enum.Parse(typeof(TokenMultiplicity),
-//                section.getString("TokenMultiplicity"), true);
-//        this.accessCredential = new HashMap<>();
-//        for (JSONObject aSection : section.getJSONObject("AccessCredential").GetChildren())
-//            this.accessCredential.put(aSection.Key,aSection.Value);
+        this.pinName = section.getString("PinName");
+        this.pinType = section.getString("PinType");
+        this.isRequired = section.getString("IsRequired");
+        this.accessType = section.getString("AccessType");
+        this.dataMultiplicity = (DataMultiplicity)Enum.Parse(typeof(DataMultiplicity),
+                section.getString("DataMultiplicity"), true);
+        tokenMultiplicity = (TokenMultiplicity)Enum.Parse(typeof(TokenMultiplicity),
+                section.getString("TokenMultiplicity"), true);
+        this.accessCredential = new HashMap<>();
+        for (JSONObject aSection : section.getJSONObject("AccessCredential").GetChildren())
+            this.accessCredential.put(aSection.keys().next().toString(), aSection.toString());
     }
 }
