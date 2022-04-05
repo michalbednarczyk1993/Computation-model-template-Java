@@ -54,10 +54,6 @@ public class TokensProxy {
         return status;
     }
 
-    public StatusLine SendAckToken(List<String> msgUids, boolean isFinal, String note)  {
-        return SendAckToken(msgUids, isFinal, false, note);
-    }
-
     public StatusLine SendAckToken(List<String> msgUids, boolean isFinal, boolean isFailed, String note) {
         var ackToken = new TokensAck(msgUids, senderUid, note, isFailed, isFinal);
         HttpPost postRequest = new HttpPost(batchManagerAckUrl);
@@ -78,5 +74,13 @@ public class TokensProxy {
         }
 
         return status;
+    }
+
+    public StatusLine SendAckToken(List<String> msgUids, boolean isFinal, String note)  {
+        return SendAckToken(msgUids, isFinal, false, note);
+    }
+
+    public StatusLine SendAckToken(List<String> msgUids, boolean isFinal)  {
+        return SendAckToken(msgUids, isFinal, false, "");
     }
 }
