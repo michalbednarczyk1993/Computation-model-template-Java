@@ -130,20 +130,13 @@ public class DataHandler implements IDataHandler{
         return -1;
     }
 
-    ///
-    /// <param name="pinName"></param>
-    /// <param name="handle"></param>
-    public short CheckConnection(String pinName, @Nullable Map<String, String> handle)
-    {
-        try
-        {
+    public short CheckConnection(String pinName, @Nullable Map<String, String> handle) {
+        try {
             DataHandle dHandle = GetDataHandle(pinName);
             return dHandle.checkConnection(handle);
         }
-        catch (ArgumentException)
-        {
-            throw new ArgumentException(
-                    "Cannot check connection for a pin of type \"Direct\"");
+        catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Cannot check connection for a pin of type \"Direct\"");
         }
     }
 
