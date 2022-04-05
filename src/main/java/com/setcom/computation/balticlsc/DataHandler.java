@@ -3,6 +3,7 @@ package com.setcom.computation.balticlsc;
 import com.setcom.computation.apiaccess.TokensProxy;
 import org.javatuples.Pair;
 import org.springframework.boot.configurationprocessor.json.JSONObject;
+import org.springframework.http.HttpStatus;
 import org.springframework.lang.Nullable;
 
 import java.util.Dictionary;
@@ -117,14 +118,9 @@ public class DataHandler implements IDataHandler{
         return -1;
     }
 
-    ///
-    /// <param name="msgUids"></param>
-    /// <param name="isFinal"></param>
-    public short SendAckToken(List<string> msgUids, bool isFinal)
-    {
-        if (HttpStatusCode.OK == _tokensProxy.SendAckToken(msgUids, isFinal))
-        {
-            _registry.ClearMessages(msgUids);
+    public short SendAckToken(List<String> msgUids, boolean isFinal) {
+        if (HttpStatus.OK.value() == tokensProxy.SendAckToken(msgUids, isFinal).getStatusCode()) {
+            registry.ClearMessages(msgUids);
             return 0;
         }
         return -1;
