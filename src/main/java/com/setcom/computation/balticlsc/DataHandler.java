@@ -1,6 +1,7 @@
 package com.setcom.computation.balticlsc;
 
 import com.setcom.computation.apiaccess.TokensProxy;
+import com.setcom.computation.datamodel.Status;
 import org.javatuples.Pair;
 import org.springframework.boot.configurationprocessor.json.JSONObject;
 import org.springframework.http.HttpStatus;
@@ -106,13 +107,11 @@ public class DataHandler implements IDataHandler{
         return SendAckToken(msgUids, true);
     }
 
-    public short FailProcessing(String note)
-    {
-        List<string> msgUids = _registry.GetAllMsgUids();
-        _registry.SetStatus(Status.Failed);
-        if (HttpStatusCode.OK == _tokensProxy.SendAckToken(msgUids, true, true, note))
-        {
-            _registry.ClearMessages(msgUids);
+    public short FailProcessing(String note) {
+        List<String> msgUids = registry.GetAllMsgUids();
+        registry.SetStatus(Status.FAILED);
+        if (HttpStatus.OK.value() == tokensProxy.SendAckToken(msgUids, true, true, note).getStatusCode()) {
+            registry.ClearMessages(msgUids);
             return 0;
         }
         return -1;
