@@ -1,13 +1,12 @@
 package com.setcom.computation.balticlsc;
 
 import com.setcom.computation.datamodel.PinConfiguration;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.tomcat.jni.FileInfo;
 import org.springframework.boot.configurationprocessor.json.JSONException;
 import org.springframework.boot.configurationprocessor.json.JSONObject;
 import org.springframework.lang.Nullable;
 import org.springframework.util.FileSystemUtils;
-import org.springframework.web.bind.annotation.PathVariable;
 
 import java.io.File;
 import java.io.IOException;
@@ -25,9 +24,7 @@ public abstract class DataHandle {
     private static final String BALTIC_DATA_PREFIX = "BalticLSC-";
     private static final int GUID_LENGTH = 6;
 
-    ///
-    /// <param name="pinName"></param>
-    /// <param name="configuration"></param>
+
     protected DataHandle(String pinName, JSONObject configuration)
     {
         localPath = System.getenv("LOCAL_TMP_PATH") != null ?
@@ -49,12 +46,8 @@ public abstract class DataHandle {
 
     public abstract short checkConnection(@Nullable HashMap<String, String> handle);
 
-    ///
-    /// <param name="handle"></param>
     public abstract String Download(HashMap<String, String> handle);
 
-    ///
-    /// <param name="localPath"></param>
     public abstract HashMap<String, String> upload(String localPath);
 
     protected void clearLocal()
@@ -96,31 +89,31 @@ public abstract class DataHandle {
         return BALTIC_DATA_PREFIX + UUID.randomUUID().toString().substring(0, GUID_LENGTH) + "-" + name;
     }
 
-    protected List<FileInfo> getAllFiles(String directoryPath)
-    {
+    protected List<String> getAllFiles(String directoryPath) {
+        List<String> result = new ArrayList<>();
         try {
-            File directory = new File(localPath);
-            if (!directory.exists()) {
-                return new ArrayList<>();
+            File rootDir = new File(localPath);
+            if (!rootDir.exists()) {
+                log.warn("Provided directory does not exist.");
+                return result;
             }
-        } catch (SecurityException e) {
+
+            File[] list = Objects.requireNonNull(rootDir.listFiles());
+
+            for (File file : list) {
+                if (file.isFile()) {
+                    result.add(file.getAbsolutePath());
+                } else {
+                    result.addAll(getAllFiles(file.getAbsolutePath()));
+                }
+            }
+
+        } catch (NullPointerException | SecurityException e) {
             log.error(e.toString());
+            return result;
         }
 
-        var dirInfo = new File(directoryPath);
-        var files = Arrays.asList(Objects.requireNonNull(dirInfo.listFiles()));
-        var dirs = Arrays.asList(Objects.requireNonNull(dirInfo.list()));
-
-        dirs.forEach((x)->files.);
-
-//        var directoryInfo = new DirectoryInfo(directoryPath);
-//        var files = directoryInfo.GetFiles().ToList();
-//        var directories = directoryInfo.GetDirectories().ToList();
-
-
-
-            directories.ForEach((x)-> files.AddRange(getAllFiles(x.FullName)));
-
-        return files;
+        return result;
     }
+
 }
