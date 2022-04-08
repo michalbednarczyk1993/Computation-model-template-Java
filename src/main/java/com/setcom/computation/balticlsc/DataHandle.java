@@ -44,11 +44,11 @@ public abstract class DataHandle {
         }
     }
 
-    public abstract short checkConnection(@Nullable HashMap<String, String> handle);
+    public abstract short checkConnection(Map<String, String> handle);
 
-    public abstract String Download(HashMap<String, String> handle);
+    public abstract String Download(Map<String, String> handle);
 
-    public abstract HashMap<String, String> upload(String localPath);
+    public abstract Map<String, String> upload(String localPath);
 
     protected void clearLocal()
     {

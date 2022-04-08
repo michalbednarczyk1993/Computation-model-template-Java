@@ -1,5 +1,6 @@
 package com.setcom.computation.balticlsc;
 
+import com.google.gson.Gson;
 import com.setcom.computation.apiaccess.TokensProxy;
 import com.setcom.computation.datamodel.Status;
 import org.javatuples.Pair;
@@ -7,10 +8,7 @@ import org.springframework.boot.configurationprocessor.json.JSONObject;
 import org.springframework.http.HttpStatus;
 import org.springframework.lang.Nullable;
 
-import java.util.Dictionary;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class DataHandler implements IDataHandler{
 
@@ -19,9 +17,11 @@ public class DataHandler implements IDataHandler{
     private final JobRegistry registry;
     private final JSONObject configuration;
 
-    ///
-    /// <param name="registry"></param>
-    /// <param name="configuration"></param>
+    /**
+     *
+     * @param registry
+     * @param configuration
+     */
     public DataHandler(JobRegistry registry, JSONObject configuration)
     {
         this.registry = registry;
@@ -30,83 +30,91 @@ public class DataHandler implements IDataHandler{
         this.dataHandles = new HashMap<>();
     }
 
-    public String ObtainDataItem(String pinName) {
-        List<String> values;
-        long[] sizes;
-        //(values, sizes) = ObtainDataItemsNDim(pinName); //TODO how to handle it?
+    @Override
+    public String ObtainDataItem(String pinName) throws Exception {
         Pair<List<String>, long[]> obtainData = ObtainDataItemsNDim(pinName);
-        obtainData.
-        if (null == values || 0 == values.size())
+        if (null == obtainData.getValue0() || 0 == obtainData.getValue0().size())
             return null;
-        if (null == sizes && 1 == values.size())
-            return values.get(0);
+        if (null == obtainData.getValue1() && 1 == obtainData.getValue0().size())
+            return obtainData.getValue0().get(0);
         throw new Exception("Improper call - more than one data item exists for the pin");
     }
 
-    public List<String> ObtainDataItems(String pinName)
-    {
-        List<String> values;
-        long[] sizes;
-        (values, sizes) = ObtainDataItemsNDim(pinName);
-        if (1 == sizes?.Length) //TODO how to convert it?
-        return values;
+    @Override
+    public List<String> ObtainDataItems(String pinName) throws Exception {
+        Pair<List<String>, long[]> obtainData = ObtainDataItemsNDim(pinName);
+        if (obtainData.getValue1() != null && obtainData.getValue1().length == 1) {
+            return obtainData.getValue0();
+        }
         throw new Exception("Improper call - more than one dimension exists for the pin");
     }
 
-    ///
-    /// <param name="pinName"></param>
-    public Pair<List<String>, long[]> ObtainDataItemsNDim(String pinName)
-    {
-        try
-        {
-            List<String> values;
-            long[] sizes;
-            (values, sizes) = registry.GetPinValuesNDim(pinName);
-            List<Dictionary<String,String>> valuesObject =
-            values.Select(v => !string.IsNullOrEmpty(v) ? JsonConvert.DeserializeObject<Dictionary<string, string>>(v) : null).ToList();
+    /**
+     *
+     * @param pinName
+     * @return
+     */
+    @Override
+    public Pair<List<String>, long[]> ObtainDataItemsNDim(String pinName) {
+        try {
+            Pair<List<String>, long[]> pair = registry.GetPinValuesNDim(pinName);
+            List<HashMap<String,String>> valuesObject = new ArrayList<>();
+            for (String value : pair.getValue0()) {
+                if (value != null && !value.isEmpty()) {
+                    HashMap<String, String> map = new Gson().fromJson(value, HashMap.class);
+                    valuesObject.add(map);
+                }
+            }
+
             DataHandle dHandle = GetDataHandle(pinName);
-            List<string> dataItems = valuesObject.Select(vo => null != vo ? dHandle.Download(vo): null).ToList();
-            return (dataItems, sizes);
-        }
-        catch (ArgumentException)
-        {
-            return _registry.GetPinValuesNDim(pinName);
+            List<String> dataItems = new ArrayList<>();
+            for (HashMap<String, String> value : valuesObject) {
+                if (value != null) {
+                    dataItems.add(dHandle.Download(value));
+                }
+            }
+
+            return new Pair<>(dataItems, pair.getValue1());
+        }catch (IllegalArgumentException e) {
+            return registry.GetPinValuesNDim(pinName);
         }
     }
 
-    ///
-    /// <param name="pinName"></param>
-    /// <param name="data"></param>
-    /// <param name="isFinal"></param>
-    /// <param name="msgUid"></param>
-    public short SendDataItem(string pinName, string data, bool isFinal, string msgUid = null)
-    {
-        if ("Direct" == _registry.GetPinConfiguration(pinName).AccessType)
+    @Override
+    public short SendDataItem(String pinName, String data, boolean isFinal, @Nullable String msgUid) {
+        if ("Direct".equals(registry.GetPinConfiguration(pinName).accessType))
             return SendToken(pinName, data, isFinal, msgUid);
         DataHandle dHandle = GetDataHandle(pinName);
-        Dictionary<string,string> newHandle = dHandle.upload(data);
-        return SendToken(pinName, JsonConvert.SerializeObject(newHandle), isFinal, msgUid);
+        Map<String,String> newHandle = dHandle.upload(data);
+
+        return SendToken(pinName, new Gson().toJson(newHandle), isFinal, msgUid);
     }
 
-    ///
-    /// <param name="pinName"></param>
-    /// <param name="values"></param>
-    /// <param name="isFinal"></param>
-    /// <param name="msgUid"></param>
-    public short SendToken(string pinName, string values, bool isFinal, string msgUid = null)
-    {
+    @Override
+    public short SendDataItem(String pinName, String data, boolean isFinal) {
+        return SendDataItem(pinName, data, isFinal, null);
+    }
+
+    @Override
+    public short SendToken(String pinName, String values, boolean isFinal, @Nullable String msgUid) {
         if (null == msgUid)
-            msgUid = _registry.GetBaseMsgUid();
-        return HttpStatusCode.OK == _tokensProxy.SendOutputToken(pinName, values, msgUid, isFinal) ? (short)0 : (short)-1;
+            msgUid = registry.GetBaseMsgUid();
+        return HttpStatus.OK.value() == tokensProxy.SendOutputToken(pinName, values, msgUid, isFinal).getStatusCode()
+                ? (short)0 : (short)-1;
     }
 
-    public short FinishProcessing()
-    {
-        List<string> msgUids = _registry.GetAllMsgUids();
-        _registry.SetStatus(Status.Completed);
+    @Override
+    public short SendToken(String pinName, String values, boolean isFinal) {
+        return SendToken(pinName, values, isFinal, null);
+    }
+
+    public short FinishProcessing() {
+        List<String> msgUids = registry.GetAllMsgUids();
+        registry.SetStatus(Status.COMPLETED);
         return SendAckToken(msgUids, true);
     }
 
+    @Override
     public short FailProcessing(String note) {
         List<String> msgUids = registry.GetAllMsgUids();
         registry.SetStatus(Status.FAILED);
@@ -117,6 +125,7 @@ public class DataHandler implements IDataHandler{
         return -1;
     }
 
+    @Override
     public short SendAckToken(List<String> msgUids, boolean isFinal) {
         if (HttpStatus.OK.value() == tokensProxy.SendAckToken(msgUids, isFinal).getStatusCode()) {
             registry.ClearMessages(msgUids);

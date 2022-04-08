@@ -6,9 +6,9 @@ import java.util.List;
 
 public interface IDataHandler {
 
-    String ObtainDataItem(String pinName);
+    String ObtainDataItem(String pinName) throws Exception;
 
-    List<String> ObtainDataItems(String pinName);
+    List<String> ObtainDataItems(String pinName) throws Exception;
 
     Pair<List<String>, long[]> ObtainDataItemsNDim(String pinName);
 
