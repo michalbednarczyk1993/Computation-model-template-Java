@@ -25,13 +25,18 @@ public abstract class DataHandle {
     private static final int GUID_LENGTH = 6;
 
 
+    /**
+     *
+     * @param pinName
+     * @param configuration
+     */
     protected DataHandle(String pinName, JSONObject configuration)
     {
         localPath = System.getenv("LOCAL_TMP_PATH") != null ?
                 System.getenv("LOCAL_TMP_PATH") : "/balticLSC_tmp";
 
         try {
-            pinConfiguration = ConfigurationHandle.GetPinsConfiguration(configuration).
+            pinConfiguration = Objects.requireNonNull(ConfigurationHandle.GetPinsConfiguration(configuration)).
                     stream().filter((x)-> x.pinName.equals(pinName)).findAny().orElse(null);
         } catch (JSONException e) {
             log.error("Error while parsing configuration.");
@@ -44,10 +49,25 @@ public abstract class DataHandle {
         }
     }
 
+    /**
+     *
+     * @param handle
+     * @return
+     */
     public abstract short checkConnection(@Nullable HashMap<String, String> handle);
 
+    /**
+     *
+     * @param handle
+     * @return
+     */
     public abstract String Download(HashMap<String, String> handle);
 
+    /**
+     *
+     * @param localPath
+     * @return
+     */
     public abstract HashMap<String, String> upload(String localPath);
 
     protected void clearLocal()
@@ -58,7 +78,7 @@ public abstract class DataHandle {
                 FileSystemUtils.deleteRecursively(Paths.get(localPath));
             }
         } catch (IOException | SecurityException e) {
-            log.error("Error while clearing local memory:  " + e.toString());
+            log.error("Error while clearing local memory:  " + e);
         }
     }
 

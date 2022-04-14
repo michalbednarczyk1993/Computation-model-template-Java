@@ -7,11 +7,11 @@ import java.util.List;
 public interface IDataHandler {
     ///
     /// <param name="pinName"></param>
-    String ObtainDataItem(String pinName);
+    String ObtainDataItem(String pinName) throws Exception;
 
     ///
     /// <param name="pinName"></param>
-    List<String> ObtainDataItems(String pinName);
+    List<String> ObtainDataItems(String pinName) throws Exception;
 
     ///
     /// <param name="pinName"></param>
