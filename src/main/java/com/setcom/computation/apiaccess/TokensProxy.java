@@ -54,6 +54,10 @@ public class TokensProxy {
         return status;
     }
 
+    public StatusLine SendAckToken(List<String> msgUids, boolean isFinal)  {
+        return SendAckToken(msgUids, isFinal, false, "");
+    }
+
     public StatusLine SendAckToken(List<String> msgUids, boolean isFinal, String note)  {
         return SendAckToken(msgUids, isFinal, false, note);
     }

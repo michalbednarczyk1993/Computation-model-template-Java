@@ -54,7 +54,7 @@ public abstract class DataHandle {
      * @param handle
      * @return
      */
-    public abstract short checkConnection(@Nullable HashMap<String, String> handle);
+    public abstract short checkConnection(@Nullable Map<String, String> handle);
 
     /**
      *

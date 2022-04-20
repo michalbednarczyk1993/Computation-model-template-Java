@@ -8,10 +8,8 @@ import org.apache.http.StatusLine;
 import org.apache.http.message.BasicStatusLine;
 import org.javatuples.Pair;
 import org.springframework.boot.configurationprocessor.json.JSONObject;
-import org.springframework.http.HttpStatus;
 import org.springframework.lang.Nullable;
 
-import java.util.Dictionary;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -129,21 +127,26 @@ public class DataHandler implements IDataHandler{
     public short FailProcessing(String note) {
         List<String> msgUids = registry.GetAllMsgUids();
         registry.SetStatus(Status.FAILED);
-        if (HttpStatusCode.OK == tokensProxy.SendAckToken(msgUids, true, true, note)) {
+        StatusLine status = new BasicStatusLine(
+                new ProtocolVersion("HTTP", 2, 0), 200, "");
+        if (status.equals(tokensProxy.SendAckToken(msgUids, true, true, note))) {
             registry.ClearMessages(msgUids);
             return 0;
         }
         return -1;
     }
 
-    ///
-    /// <param name="msgUids"></param>
-    /// <param name="isFinal"></param>
-    public short SendAckToken(List<string> msgUids, bool isFinal)
-    {
-        if (HttpStatusCode.OK == _tokensProxy.SendAckToken(msgUids, isFinal))
-        {
-            _registry.ClearMessages(msgUids);
+    /**
+     *
+     * @param msgUids
+     * @param isFinal
+     * @return
+     */
+    public short SendAckToken(List<String> msgUids, boolean isFinal) {
+        StatusLine status = new BasicStatusLine(
+                new ProtocolVersion("HTTP", 2, 0), 200, "");
+        if (status.equals(tokensProxy.SendAckToken(msgUids, isFinal))) {
+            registry.ClearMessages(msgUids);
             return 0;
         }
         return -1;
@@ -164,14 +167,12 @@ public class DataHandler implements IDataHandler{
         }
     }
 
-    private DataHandle GetDataHandle(String pinName)
-    {
+    private DataHandle GetDataHandle(String pinName) {
         if (null != dataHandles.get(pinName))
             return dataHandles.get(pinName);
         String accessType = registry.GetPinConfiguration(pinName).accessType;
         DataHandle handle;
-        switch (accessType)
-        {
+        switch (accessType) {
             case "Direct":
                 throw new IllegalArgumentException(
                         "Cannot create a data handle for a pin of type \"Direct\"");
