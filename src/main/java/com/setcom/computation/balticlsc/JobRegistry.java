@@ -9,12 +9,9 @@ import org.springframework.boot.configurationprocessor.json.JSONObject;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.Semaphore;
-import java.util.stream.Stream;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -61,8 +58,12 @@ public class JobRegistry implements IJobRegistry {
         }
     }
 
-    ///
-    /// <param name="pinName"></param>
+    /**
+     *
+     * @param pinName
+     * @return
+     * @throws InterruptedException
+     */
     public Status GetPinStatus(String pinName) throws InterruptedException {
         semaphore.wait();
         try {
@@ -107,77 +108,73 @@ public class JobRegistry implements IJobRegistry {
         throw new Exception("Improper call - more than one dimension exists for the pin");
     }
 
-    ///
-    /// <param name="pinName"></param>
+    /**
+     *
+     * @param pinName
+     * @return
+     */
     public Pair<List<String>, long[]> GetPinValuesNDim(String pinName) {
-        try
-        {
+        try {
             semaphore.wait();
 
             if (0 == tokens.get(pinName).size())
                 return new Pair<>(null, null);
 
             // Single token pin:
+            if (TokenMultiplicity.SINGLE == GetPinConfigurationInternal(pinName).tokenMultiplicity)
+                return new Pair<>(new List<String>(tokens.get(pinName).stream().findFirst().orElse().values), null);
 
-            if (TokenMultiplicity.SINGLE == GetPinConfigurationInternal(pinName).TokenMultiplicity)
-                return (new List<String>() {tokens.get(pinName).FirstOrDefault().Values}, null);
 
             // Multiple token pin:
-
-            long[] maxTableCounts = new long[tokens.get(pinName).FirstOrDefault().TokenSeqStack.Count()];
+            long[] maxTableCounts = new long[tokens.get(pinName).stream().findFirst().orElse().tokenSeqStack.Count()];
             for (InputTokenMessage message : tokens.get(pinName))
-            for (int i = 0; i < message.tokenSeqStack.Count(); i++) // TODO Enumeration nie ma niczego co by pasowało do tego. Poszukać innego zasobu.
-                if (maxTableCounts[i] < message.tokenSeqStack.ToList()[i].No)
-                    maxTableCounts[i] = message.tokenSeqStack.ToList()[i].No;
+            for (int i = 0; i < message.tokenSeqStack.size(); i++)
+                if (maxTableCounts[i] < message.tokenSeqStack.get(i).no)
+                    maxTableCounts[i] = message.tokenSeqStack.get(i).no;
+
 
             long allTokenCount = 1;
             for (long index : maxTableCounts)
             allTokenCount *= index + 1;
 
-            String[] result = new String[allTokenCount];
+            String[] result = new String[(int) allTokenCount];
 
-            for (InputTokenMessage message : tokens.get(pinName))
-            {
+            for (InputTokenMessage message : tokens.get(pinName)) {
                 long index = 0;
                 long product = 1;
-                for (int i = 0; i < message.tokenSeqStack.Count(); i++)
-                {
+                for (int i = 0; i < message.tokenSeqStack.size(); i++) {
                     index += maxTableCounts[i] * product;
                     product *= maxTableCounts[i];
                 }
 
-                result[index] = message.values;
+                result[(int) index] = message.values;
             }
 
-            return new Pair<result.ToList(), maxTableCounts>();
+            return new Pair<> (Arrays.stream(result).collect(Collectors.toList()), maxTableCounts);
         } catch (InterruptedException e) {
             log.error(e.getMessage());
-        }
-        finally
-        {
+        } finally {
             semaphore.release();
         }
+        return null;
     }
 
-    ///
-    /// <param name="pinName"></param>
-    public List<InputTokenMessage> GetPinTokens(String pinName)
-    {
-        try
-        {
+    public List<InputTokenMessage> GetPinTokens(String pinName) {
+        try {
             semaphore.wait();
             return tokens.get(pinName);
         } catch (InterruptedException e) {
             log.error(e.getMessage());
-        }
-        finally
-        {
+        } finally {
             semaphore.release();
         }
+        return null;
     }
 
-    ///
-    /// <param name="progress"></param>
+    /**
+     *
+     * @param progress
+     */
     public void SetProgress(long progress) {
         try {
             semaphore.wait();
@@ -203,8 +200,10 @@ public class JobRegistry implements IJobRegistry {
         }
     }
 
-    ///
-    /// <param name="status"></param>
+    /**
+     *
+     * @param status
+     */
     public void SetStatus(Status status) {
         try {
             semaphore.wait();
@@ -228,13 +227,15 @@ public class JobRegistry implements IJobRegistry {
         }
     }
 
-    ///
-    /// <param name="name"></param>
-    /// <param name="value"></param>
+    /**
+     *
+     * @param name
+     * @param value
+     */
     public void SetVariable(String name, String value) {
         try {
             semaphore.wait();
-            variables[name] = value;
+            variables.(name) = value;
         } catch (InterruptedException e) {
             log.error(e.getMessage());
         } finally {
