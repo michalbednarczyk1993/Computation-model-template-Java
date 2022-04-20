@@ -108,13 +108,14 @@ public class DataHandler implements IDataHandler{
         return SendToken(pinName, values, isFinal, null);
     }
 
+    @Override
     public short FinishProcessing() {
         List<String> msgUids = registry.GetAllMsgUids();
         registry.SetStatus(Status.COMPLETED);
         return SendAckToken(msgUids, true);
     }
 
-    @Override
+
     public short FailProcessing(String note) {
         List<String> msgUids = registry.GetAllMsgUids();
         registry.SetStatus(Status.FAILED);
