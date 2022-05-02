@@ -6,7 +6,6 @@ import org.javatuples.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.configurationprocessor.json.JSONException;
 import org.springframework.boot.configurationprocessor.json.JSONObject;
-import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -122,11 +121,13 @@ public class JobRegistry implements IJobRegistry {
 
             // Single token pin:
             if (TokenMultiplicity.SINGLE == GetPinConfigurationInternal(pinName).tokenMultiplicity)
-                return new Pair<>(new List<String>(tokens.get(pinName).stream().findFirst().orElse().values), null);
+                return new Pair<>(new ArrayList<>(Collections.singleton(tokens.get(pinName).
+                        stream().findFirst().orElse(new InputTokenMessage()).values)), null);
 
 
             // Multiple token pin:
-            long[] maxTableCounts = new long[tokens.get(pinName).stream().findFirst().orElse().tokenSeqStack.Count()];
+            long[] maxTableCounts = new long[tokens.get(pinName).
+                    stream().findFirst().orElse(new InputTokenMessage()).tokenSeqStack.size()];
             for (InputTokenMessage message : tokens.get(pinName))
             for (int i = 0; i < message.tokenSeqStack.size(); i++)
                 if (maxTableCounts[i] < message.tokenSeqStack.get(i).no)
@@ -235,7 +236,7 @@ public class JobRegistry implements IJobRegistry {
     public void SetVariable(String name, String value) {
         try {
             semaphore.wait();
-            variables.(name) = value;
+            variables.put(name, value);
         } catch (InterruptedException e) {
             log.error(e.getMessage());
         } finally {
@@ -243,12 +244,15 @@ public class JobRegistry implements IJobRegistry {
         }
     }
 
-    ///
-    /// <param name="name"></param>
+    /**
+     *
+     * @param name
+     * @return
+     */
     public Object GetVariable(String name) {
         try {
             semaphore.wait();
-            return variables[name];
+            return variables.get(name);
         } catch (InterruptedException e) {
             log.error(e.getMessage());
             return null;
@@ -258,12 +262,11 @@ public class JobRegistry implements IJobRegistry {
     }
 
     public String GetEnvironmentVariable(String name) {
-        return Environment.GetEnvironmentVariable(name);
+        return System.getenv(name);
     }
 
     public PinConfiguration GetPinConfiguration(String pinName) {
-        try
-        {
+        try {
             semaphore.wait();
             return GetPinConfigurationInternal(pinName);
         } catch (InterruptedException e) {
@@ -274,16 +277,16 @@ public class JobRegistry implements IJobRegistry {
         }
     }
 
-    private PinConfiguration GetPinConfigurationInternal(String pinName)
-    {
-        return pins.Find(x => x.PinName == pinName);
+    private PinConfiguration GetPinConfigurationInternal(String pinName) {
+        return pins.stream().filter(x-> x.pinName.equals(pinName)).findFirst().orElse(null);
     }
 
-    public List<String> GetStrongPinNames()
-    {
+    public List<String> GetStrongPinNames() {
         try {
             semaphore.wait();
-            return pins.FindAll(p => "true" == p.IsRequired).Select(p => p.PinName).ToList();
+            List<String> result = new ArrayList<>();
+            pins.stream().filter(p-> p.isRequired.equals("true")).forEach(p-> result.add(p.isRequired));
+            return result;
         } catch (InterruptedException e) {
             log.error(e.getMessage());
             return null;
@@ -295,19 +298,23 @@ public class JobRegistry implements IJobRegistry {
     public String GetBaseMsgUid() {
         try {
             semaphore.wait();
-            return tokens.Values.ToList().Find(ltm => 0 != ltm.Count)?.FirstOrDefault()?.MsgUid;
+            return Objects.requireNonNull(Objects.requireNonNull(
+                    new ArrayList<>(tokens.values()).stream().filter(ltm -> !ltm.isEmpty()).
+                            findFirst().orElse(null)).stream().findFirst().orElse(null)).msgUid;
         } catch (InterruptedException e) {
             log.error(e.getMessage());
         } finally {
             semaphore.release();
         }
+        return null;
     }
 
     public List<String> GetAllMsgUids() {
         try {
             semaphore.wait();
-            return tokens.Values.ToList().SelectMany(it => it).
-            Select(it => it.MsgUid).ToList();
+            List<String> result = new ArrayList<>();
+            new ArrayList<>(tokens.values()).forEach(it-> it.forEach(it2-> result.add(it2.msgUid)));
+            return result;
         } catch (InterruptedException e) {
             log.error(e.getMessage());
             return null;
@@ -316,17 +323,14 @@ public class JobRegistry implements IJobRegistry {
         }
     }
 
-    public void ClearMessages(List<String> msgUids)
-    {
-        for (String msgUid : msgUids)
-        {
-            List<InputTokenMessage> tokens = tokens.Values.ToList().
-                    Find(l => l.Exists(it => msgUid == it.MsgUid));
-            if (null != tokens)
-            {
-                InputTokenMessage message = tokens.Find(it => msgUid == it.MsgUid);
-                tokens.Remove(message);
-            }
+    public void ClearMessages(List<String> msgUids) {
+        for (String msgUid : msgUids) {
+            List<List<InputTokenMessage>> list = new ArrayList<>(tokens.values());
+            list.forEach(it-> it.forEach(it2-> {
+                if(it2.msgUid.equals(msgUid)) {
+                    it.remove(it2);
+                }
+            }));
         }
     }
 
