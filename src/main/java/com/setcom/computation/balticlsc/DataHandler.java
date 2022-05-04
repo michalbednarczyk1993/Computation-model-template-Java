@@ -94,7 +94,7 @@ public class DataHandler implements IDataHandler{
      * @param msgUid
      * @return
      */
-    public short SendDataItem(String pinName, String data, boolean isFinal, @Nullable String msgUid) {
+    public short SendDataItem(String pinName, String data, boolean isFinal, @Nullable String msgUid) throws Exception {
         if (registry.GetPinConfiguration(pinName).accessType.equals("Direct"))
             return SendToken(pinName, data, isFinal, msgUid);
         DataHandle dHandle = GetDataHandle(pinName);
@@ -158,7 +158,7 @@ public class DataHandler implements IDataHandler{
      * @param handle
      * @return
      */
-    public short CheckConnection(String pinName, @Nullable Map<String, String> handle) {
+    public short checkConnection(String pinName, @Nullable Map<String, String> handle) {
         try {
             DataHandle dHandle = GetDataHandle(pinName);
             return dHandle.checkConnection(handle);

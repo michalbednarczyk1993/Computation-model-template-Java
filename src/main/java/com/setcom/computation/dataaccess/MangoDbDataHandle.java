@@ -1,10 +1,25 @@
 package com.setcom.computation.dataaccess;
 
+import com.mongodb.lang.Nullable;
 import com.setcom.computation.balticlsc.DataHandle;
+import com.setcom.computation.datamodel.DataMultiplicity;
+import com.setcom.computation.datamodel.PinConfiguration;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.tomcat.jni.Directory;
+import org.bson.BsonDocument;
+import org.bson.types.ObjectId;
+import org.javatuples.Pair;
+import org.springframework.asm.Handle;
 import org.springframework.boot.configurationprocessor.json.JSONObject;
 
+import java.io.File;
+import java.util.ArrayList;
 import java.util.Dictionary;
+import java.util.HashMap;
+import java.util.List;
 
+
+@Slf4j
 public class MangoDbDataHandle extends DataHandle {
 
     private final String connectionString;
@@ -12,78 +27,72 @@ public class MangoDbDataHandle extends DataHandle {
     private IMongoDatabase mongoDatabase;
     private IMongoCollection<BsonDocument> mongoCollection;
 
-    public MongoDbHandle(String pinName, JSONObject configuration) : base(pinName, configuration)
-    {
-        connectionString = $"mongodb://{PinConfiguration.AccessCredential["User"]}" +
-            $":{PinConfiguration.AccessCredential["Password"]}" +
-            $"@{PinConfiguration.AccessCredential["Host"]}" +
-            $":{PinConfiguration.AccessCredential["Port"]}";
+    public MongoDbHandle(String pinName, JSONObject configuration) {
+        super(pinName, configuration);
+        connectionString = "mongodb://{PinConfiguration.AccessCredential[\"" + User + "\"]}" +
+            ":{PinConfiguration.AccessCredential[\"" + Password + "\"]}" +
+            "@{PinConfiguration.AccessCredential[\"" + Host + "\"]}" +
+            ":{PinConfiguration.AccessCredential[\"" + Port + "\"]}";
     }
 
     @Override
-    public String Download(Dictionary<String, String> handle)
-    {
-        if ("input" != PinConfiguration.PinType)
+    public String Download(HashMap<String, String> handle) throws Exception {
+        String databaseName = handle.getOrDefault("Database", "");
+        String collectionName = handle.getOrDefault("Collection", "");
+        if (!pinConfiguration.pinType.equals("input"))
             throw new Exception("Download cannot be called for output pins");
-        if (!handle.TryGetValue("Database", out var databaseName))
-            throw new ArgumentException("Incorrect DataHandle.");
-        if (!handle.TryGetValue("Collection", out var collectionName))
-            throw new ArgumentException("Incorrect DataHandle.");
+        if (databaseName.isEmpty())
+            throw new IllegalArgumentException("Incorrect DataHandle.");
+        if (collectionName.isEmpty())
+            throw new IllegalArgumentException("Incorrect DataHandle.");
 
         Prepare(databaseName, collectionName);
 
-        var localPath = "";
-        switch (PinConfiguration.DataMultiplicity)
-        {
-            case DataMultiplicity.Single:
+        String localPath = "";
+        String id = handle.getOrDefault("ObjectId", "");
+        switch (pinConfiguration.dataMultiplicity) {
+            case DataMultiplicity.SINGLE:
             {
-                if (!handle.TryGetValue("ObjectId", out String id))
-                    throw new ArgumentException("Incorrect DataHandle.");
-                try
-                {
-                    Log.Information($"Downloading object with id: {id}");
+                if (id.isEmpty())
+                    throw new IllegalArgumentException("Incorrect DataHandle.");
+                try {
+                    log.info("Downloading object with id: " + id);
                     var filter = Builders<BsonDocument>.Filter.Eq("_id", new ObjectId(id));
                     var document = mongoCollection.Find(filter).FirstOrDefault();
-                    if (document != null)
-                    {
+                    if (document != null) {
                         localPath = DownloadSingleFile(document, this.localPath);
-                        Log.Information($"Downloading object with id: {id} successful.");
-                    }
-                    else
-                    {
-                        Log.Information($"Can not find object with id {id}");
+                        log.info("Downloading object with id: " + id + "successful.");
+                    } else {
+                        log.info("Can not find object with id: " + id);
                     }
                 }
-                catch (Exception)
-                {
-                    Log.Error($"Downloading object with id {id} failed.");
+                catch (Exception e) {
+                    log.error("Downloading object with id: " + id + "failed.");
                     clearLocal();
-                    throw;
+                    throw e;
                 }
 
                 break;
             }
-            case DataMultiplicity.Multiple:
+            case DataMultiplicity.MULTIPLE:
             {
-                try
-                {
-                    Log.Information($"Downloading all files from {collectionName}.");
-                    localPath = $"{LocalPath}/{collectionName}";
+                try {
+                    log.info("Downloading all files from " + collectionName);
+                    localPath = localPath + "/" + collectionName;
                     Directory.CreateDirectory(localPath);
                     var filter = Builders<BsonDocument>.Filter.Empty;
                     var documents = mongoCollection.Find(filter).ToList();
 
-                    foreach (var document in documents)
-                    DownloadSingleFile(document, localPath);
+                    for (var document : documents)
+                        DownloadSingleFile(document, localPath);
 
                     addGuidToFilesName(localPath);
-                    Log.Information($"Downloading all files from {collectionName} successful.");
+                    log.info("Downloading all files from " + collectionName + " successful.");
                 }
-                catch (Exception)
-                {
-                    Log.Error($"Downloading all files from collection {collectionName} failed.");
+                catch (Exception e) {
+                    log.error("Downloading all files from collection " + collectionName + " failed.");
                     clearLocal();
-                    throw;
+                    throw e;
                 }
 
                 break;
@@ -94,108 +103,91 @@ public class MangoDbDataHandle extends DataHandle {
     }
 
     @Override
-    public Dictionary<String, String> upload(String localPath)
-    {
-        if ("input" == PinConfiguration.PinType)
+    public HashMap<String, String> upload(String localPath) throws Exception {
+        if (pinConfiguration.pinType.equals("input"))
             throw new Exception("Upload cannot be called for input pins");
-        if (!File.Exists(localPath) && !Directory.Exists(localPath))
-            throw new ArgumentException($"Invalid path ({localPath})");
-        var isDirectory = File.GetAttributes(localPath).HasFlag(FileAttributes.Directory);
-        if (DataMultiplicity.Multiple == PinConfiguration.DataMultiplicity && !isDirectory)
-            throw new ArgumentException("Multiple data pin requires path pointing to a directory, not a file");
-        if (DataMultiplicity.Single == PinConfiguration.DataMultiplicity && isDirectory)
-            throw new ArgumentException("Single data pin requires path pointing to a file, not a directory");
+        if (!new File(localPath).exists())
+            throw new IllegalArgumentException("Invalid path (" + localPath + ")");
+        boolean isDirectory = File.GetAttributes(localPath).HasFlag(FileAttributes.Directory);
+        if (pinConfiguration.dataMultiplicity.equals(DataMultiplicity.MULTIPLE) && !isDirectory)
+            throw new IllegalArgumentException("Multiple data pin requires path pointing to a directory, not a file");
+        if (pinConfiguration.dataMultiplicity.equals(DataMultiplicity.SINGLE) && isDirectory)
+            throw new IllegalArgumentException("Single data pin requires path pointing to a file, not a directory");
 
-        Dictionary<string, string> handle = null;
-        try
-        {
-            var (databaseName, collectionName) = Prepare();
+        HashMap<String, String> handle = null;
+        try {
+            Pair<String, String> pair = Prepare();
+            String databaseName = pair.getValue0(), collectionName = pair.getValue1();
 
-            switch (PinConfiguration.DataMultiplicity)
-            {
-                case DataMultiplicity.Single:
+            switch (pinConfiguration.dataMultiplicity) {
+                case DataMultiplicity.SINGLE:
                 {
-                    Log.Information($"Uploading file from {localPath} to collection {collectionName}");
+                    log.info("Uploading file from " + localPath + " to collection " + collectionName);
 
                     var bsonDocument = GetBsonDocument(localPath);
                     mongoCollection.InsertOne(bsonDocument);
 
-                    handle = GetTokenHandle(bsonDocument);
-                    handle.Add("Database", databaseName);
-                    handle.Add("Collection", collectionName);
+                    handle = getTokenHandle(bsonDocument);
+                    handle.put("Database", databaseName);
+                    handle.put("Collection", collectionName);
 
-                    Log.Information($"Upload file from {localPath} successful.");
+                    log.info("Upload file from " + localPath + " successful.");
                     break;
                 }
-                case DataMultiplicity.Multiple:
+                case DataMultiplicity.MULTIPLE:
                 {
-                    Log.Information($"Uploading directory from {localPath} to collection {collectionName}");
-                    var files = GetAllFiles(localPath);
-                    var handleList = new List<Dictionary<string, string>>();
+                    log.info("Uploading directory from " + localPath + " to collection " + collectionName);
+                    var files = getAllFiles(localPath);
+                    var handleList = new ArrayList<HashMap<String, String>>();
 
-                    foreach (var bsonDocument in files.Select(file => GetBsonDocument(file.FullName)))
-                    {
+                    for (var bsonDocument : files.stream().filter(file-> GetBsonDocument(file.fullName))) {
                         mongoCollection.InsertOne(bsonDocument);
-                        handleList.Add(GetTokenHandle(bsonDocument));
+                        handleList.add(getTokenHandle(bsonDocument));
                     }
 
-                    handle = new Dictionary<string, string>
-                    {
-                        {"Files", JsonConvert.SerializeObject(handleList)},
-                        {"Database", databaseName},
-                        {"Collection", collectionName}
-                    };
+                    handle = new HashMap<>();
+                    handle.put("Files", JsonConvert.SerializeObject(handleList));
+                    handle.put("Database", databaseName);
+                    handle.put("Collection", collectionName);
 
-                    Log.Information($"Upload directory from {localPath} successful.");
+                    log.info("Upload directory from " + localPath + " successful.");
                     break;
                 }
             }
 
             return handle;
         }
-        catch (Exception e)
-        {
-            Log.Error($"Error: {e} \n Uploading from {localPath} failed.");
-            throw;
-        }
-        finally
-        {
-            ClearLocal();
+        catch (Exception e) {
+            log.error("Error: " + e + "\n Uploading from " + localPath +  " failed.");
+            throw e;
+        } finally {
+            clearLocal();
         }
     }
 
-    public override short CheckConnection(Dictionary<String, String> handle = null)
-    {
-        String host = PinConfiguration.AccessCredential["Host"],
-                port = PinConfiguration.AccessCredential["Port"];
-        try
-        {
+    public short checkConnection(@Nullable HashMap<String, String> handle) {
+        String host = pinConfiguration.accessCredential.get("Host"),
+                port = pinConfiguration.accessCredential.get("Port");
+        try {
             using var tcpClient = new TcpClient();
             tcpClient.Connect(host, int.Parse(port));
-        }
-        catch (Exception)
-        {
-            Log.Error($"Unable to reach {host}:{port}");
+        } catch (Exception e) {
+            log.error("Unable to reach " + host + ":" + port);
             return -1;
         }
 
-        try
-        {
+        try {
             mongoClient = new MongoClient(connectionString);
             mongoClient.ListDatabases();
-        }
-        catch (MongoAuthenticationException)
-        {
-            Log.Error("Unable to authenticate to MongoDB");
+        } catch (MongoAuthenticationException e) {
+            log.error("Unable to authenticate to MongoDB");
             return -2;
-        }
-        catch (Exception e)
-        {
-            Log.Error($"Error {e} while trying to connect to MongoDB");
+        } catch (Exception e) {
+            log.error("Error " + e + " while trying to connect to MongoDB");
             return -1;
         }
 
-        if ("input" == PinConfiguration.PinType && null != handle)
+        if (pinConfiguration.pinType.equals("input") && null != handle)
         {
             if (!handle.TryGetValue("Database", out var databaseName))
                 throw new ArgumentException("Incorrect DataHandle.");
@@ -246,15 +238,14 @@ public class MangoDbDataHandle extends DataHandle {
         return 0;
     }
 
-    private (String, String) Prepare(String databaseName = null, String collectionName = null)
-    {
+    private Pair<String, String> Prepare(String databaseName = null, String collectionName = null) {
         databaseName ??= $"baltic_database_{Guid.NewGuid().ToString("N")[..8]}";
         collectionName ??= $"baltic_collection_{Guid.NewGuid().ToString("N")[..8]}";
         //TODO to reset or not to reset
         mongoClient = new MongoClient(connectionString);
         mongoDatabase = mongoClient.GetDatabase(databaseName);
         mongoCollection = mongoDatabase.GetCollection<BsonDocument>(collectionName);
-        return (databaseName, collectionName);
+        return new Pair<>(databaseName, collectionName);
     }
 
     private static String DownloadSingleFile(BsonDocument document, String localPath)
@@ -290,16 +281,10 @@ public class MangoDbDataHandle extends DataHandle {
         return bsonDocument;
     }
 
-    private static Dictionary<String, String> GetTokenHandle(BsonDocument document)
-    {
-        var newHandle = new Dictionary<String, String>()
-        {
+    private static HashMap<String, String> getTokenHandle(BsonDocument document) {
+        return new HashMap<String, String>() {
             {"FileName", document.GetElement("fileName").Value.AsString},
             {"ObjectId", document.GetElement("_id").Value.AsObjectId.ToString()}
         };
-
-        return newHandle;
     }
-
-
 }

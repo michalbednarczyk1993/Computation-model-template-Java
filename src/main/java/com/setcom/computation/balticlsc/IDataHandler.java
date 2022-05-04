@@ -38,7 +38,7 @@ public interface IDataHandler {
      * @param msgUid
      * @return
      */
-    short SendDataItem(String pinName, String data, boolean isFinal, @Nullable String msgUid);
+    short SendDataItem(String pinName, String data, boolean isFinal, @Nullable String msgUid) throws Exception;
 
     /**
      *

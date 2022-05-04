@@ -61,14 +61,14 @@ public abstract class DataHandle {
      * @param handle
      * @return
      */
-    public abstract String Download(HashMap<String, String> handle);
+    public abstract String Download(HashMap<String, String> handle) throws Exception;
 
     /**
      *
      * @param localPath
      * @return
      */
-    public abstract HashMap<String, String> upload(String localPath);
+    public abstract HashMap<String, String> upload(String localPath) throws Exception;
 
     protected void clearLocal()
     {

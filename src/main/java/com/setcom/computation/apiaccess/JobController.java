@@ -40,7 +40,7 @@ public class  JobController {
             registry.RegisterToken(value);
             try {
                 String retMessage;
-                short result = handler.CheckConnection(value.pinName, new Hashtable<>(value.values.length()));
+                short result = handler.checkConnection(value.pinName, new Hashtable<>(value.values.length()));
                 /*
                 short result = _handler.CheckConnection(inputToken.PinName,
                         JsonConvert.DeserializeObject<Dictionary<string, string>>(inputToken.Values));
