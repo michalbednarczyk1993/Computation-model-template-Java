@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.internal.MongoClientImpl;
 import com.mongodb.lang.Nullable;
 import com.setcom.computation.balticlsc.DataHandle;
 import com.setcom.computation.datamodel.DataMultiplicity;
@@ -14,6 +15,7 @@ import org.bson.types.ObjectId;
 import org.javatuples.Pair;
 import org.springframework.boot.configurationprocessor.json.JSONObject;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.nio.file.NotDirectoryException;
 import java.util.*;
@@ -126,7 +128,7 @@ public class MangoDbHandle extends DataHandle {
             String databaseName = pair.getValue0(), collectionName = pair.getValue1();
 
             switch (pinConfiguration.dataMultiplicity) {
-                case DataMultiplicity.SINGLE:
+                case SINGLE:
                 {
                     log.info("Uploading file from " + localPath + " to collection " + collectionName);
 
@@ -140,7 +142,7 @@ public class MangoDbHandle extends DataHandle {
                     log.info("Upload file from " + localPath + " successful.");
                     break;
                 }
-                case DataMultiplicity.MULTIPLE:
+                case MULTIPLE:
                 {
                     log.info("Uploading directory from " + localPath + " to collection " + collectionName);
                     var files = getAllFiles(localPath);
@@ -153,8 +155,7 @@ public class MangoDbHandle extends DataHandle {
                     }
 
                     handle = new HashMap<>();
-                    handle.put("Files", JsonConvert.SerializeObject(handleList)); //Jackson pewnie lub Gson
-                    new Gson().;
+                    handle.put("Files", new Gson().toJson(handleList));
                     handle.put("Database", databaseName);
                     handle.put("Collection", collectionName);
 
@@ -185,8 +186,8 @@ public class MangoDbHandle extends DataHandle {
         }
 
         try {
-            mongoClient = new MongoClient(connectionString);
-            mongoClient.ListDatabases(); // Co ona robi w C#? https://csharp.hotexamples.com/examples/MongoDB.Driver/MongoClient/ListDatabases/php-mongoclient-listdatabases-method-examples.html
+            mongoClient = new MongoClientImpl(connectionString);
+            mongoClient.listDatabases(); // Co ona robi w C#? https://csharp.hotexamples.com/examples/MongoDB.Driver/MongoClient/ListDatabases/php-mongoclient-listdatabases-method-examples.html
         } catch (MongoAuthenticationException e) {
             log.error("Unable to authenticate to MongoDB");
             return -2;
@@ -196,31 +197,44 @@ public class MangoDbHandle extends DataHandle {
         }
 
         if (pinConfiguration.pinType.equals("input") && null != handle) {
-            if (!handle.TryGetValue("Database", out var databaseName))
-                throw new ArgumentException("Incorrect DataHandle.");
-            if (!handle.TryGetValue("Collection", out var collectionName))
-                throw new ArgumentException("Incorrect DataHandle.");
+            String databaseName, collectionName;
             String id = null;
-            if (pinConfiguration.dataMultiplicity == DataMultiplicity.SINGLE
-                    && !handle.TryGetValue("ObjectId", out id))
-                throw new ArgumentException("Incorrect DataHandle.");
+
+            if (handle.containsKey("Database")) {
+                databaseName = handle.get("Database");
+            } else {
+                throw new IllegalArgumentException("Incorrect DataHandle.");
+            }
+
+            if (handle.containsKey("Collection")) {
+                collectionName = handle.get("Collection");
+            } else {
+                throw new IllegalArgumentException("Incorrect DataHandle.");
+            }
+
+            if (pinConfiguration.dataMultiplicity == DataMultiplicity.SINGLE &&
+                    handle.containsKey("ObjectId")) {
+                id = handle.get("ObjectId");
+            } else {
+                throw new IllegalArgumentException("Incorrect DataHandle.");
+            }
+
             try {
-                mongoDatabase = mongoClient.GetDatabase(databaseName);
+                mongoDatabase = mongoClient.getDatabase(databaseName);
                 if (mongoDatabase == null) {
                     log.error("No database " + databaseName);
                     return -3;
                 }
 
-                mongoCollection = mongoDatabase.getCollection(collectionName);
+                mongoCollection = mongoDatabase.getCollection(collectionName, BsonDocument.class);
                 if (mongoCollection == null) {
                     log.error("No collection " + collectionName);
                     return -3;
                 }
 
                 if (pinConfiguration.dataMultiplicity == DataMultiplicity.SINGLE) {
-                    var filter = Builders<BsonDocument>.Filter.Eq("_id", new ObjectId(id));
-                    var document = mongoCollection.Find(filter).FirstOrDefault();
-
+                    var filter = eq("id", new ObjectId(id));
+                    var document = mongoCollection.find(filter).first();
                     if (document == null) {
                         log.error("No document with id " + id);
                         return -3;
@@ -249,12 +263,12 @@ public class MangoDbHandle extends DataHandle {
         return new Pair<>(databaseName, collectionName);
     }
 
-    private static String DownloadSingleFile(BsonDocument document, String localPath)
-    {
-        var fileName = document.GetElement("fileName").Value.AsString;
-        var fileContent = document.GetElement("fileContent").Value.AsBsonBinaryData;
+    private static String DownloadSingleFile(BsonDocument document, String localPath) {
+        var fileName = document.get("fileName").asString();
+        var fileContent = document.get("fileContent").asBinary();
         var filePath = localPath + "/" + fileName;
-        using var fileStream = File.OpenWrite(filePath);
+        var fileStream = new File(filePath);
+        fileStream.setWritable(true);
         fileStream.Write(fileContent.Bytes);
         fileStream.Dispose();
 
@@ -269,15 +283,18 @@ https://www.javappa.com/kurs-spring/spring-data-jpa-zapytania-wbudowane
 
     private static BsonDocument getBsonDocument(String localPath)
      {
-        var objectId = ObjectId.GenerateNewId();
-        var fileStream = File.OpenRead(localPath);
-        var fileName = new FileInfo(localPath).Name;
+        var objectId = ObjectId.get();
+         var fileStream = new File(localPath);
+         fileStream.setReadOnly();
+         var fileName = fileStream.getName();
+
+
         var memoryStream = new MemoryStream();
         fileStream.CopyTo(memoryStream);
         var fileByteArray = memoryStream.ToArray();
 
         var data = new HashMap<String, Object>();
-        data.put("_id", objectId);
+        data.put("id", objectId);
         data.put("fileName", fileName);
         data.put("fileContent", new BsonBinaryData(fileByteArray));
 
@@ -288,8 +305,8 @@ https://www.javappa.com/kurs-spring/spring-data-jpa-zapytania-wbudowane
 
     private static HashMap<String, String> getTokenHandle(BsonDocument document) {
         HashMap<String, String> map = new HashMap<>();
-        map.put("FileName", document.GetElement("fileName").Value.AsString);
-        map.put("ObjectId", document.GetElement("_id").Value.AsObjectId.ToString());
+        map.put("FileName", String.valueOf(document.get("fileName").asString()));
+        map.put("ObjectId", document.get("id").asObjectId().toString());
         return map;
     }
 }
