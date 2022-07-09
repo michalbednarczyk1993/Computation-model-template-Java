@@ -2,6 +2,7 @@ package com.setcom.computation.dataaccess;
 
 import com.google.gson.Gson;
 import com.mongodb.client.MongoClient;
+import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.internal.MongoClientImpl;
@@ -9,7 +10,7 @@ import com.mongodb.lang.Nullable;
 import com.setcom.computation.balticlsc.DataHandle;
 import com.setcom.computation.datamodel.DataMultiplicity;
 import lombok.extern.slf4j.Slf4j;
-import org.bson.BsonDocument;
+import org.bson.*;
 import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
 import org.javatuples.Pair;
@@ -17,7 +18,8 @@ import org.springframework.boot.configurationprocessor.json.JSONObject;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.nio.file.NotDirectoryException;
+import java.io.IOException;
+import java.nio.file.*;
 import java.util.*;
 
 import static com.mongodb.client.model.Filters.*;
@@ -254,25 +256,22 @@ public class MangoDbHandle extends DataHandle {
     }
 
     private Pair<String, String> prepare(@Nullable String databaseName, @Nullable String collectionName) {
-        if (databaseName == null) databaseName = "baltic_database_"+ UUID.randomUUID().ToString("N")[..8];
-        if (collectionName == null) collectionName = "baltic_collection_"+UUID.randomUUID().ToString("N")[..8]; // https://docs.microsoft.com/pl-pl/dotnet/api/system.guid.newguid?view=net-6.0
+        if (databaseName == null) databaseName = "baltic_database_"+ UUID.randomUUID().toString().substring(0, 8);
+        if (collectionName == null) collectionName = "baltic_collection_"+UUID.randomUUID().toString().substring(0, 8);
         //TODO to reset or not to reset
-        mongoClient = new MongoClient(connectionString);
-        mongoDatabase = mongoClient.GetDatabase(databaseName);
-        mongoCollection = mongoDatabase.GetCollection<BsonDocument>(collectionName); // > .findAll
+        mongoClient = MongoClients.create(connectionString);
+        mongoDatabase = mongoClient.getDatabase(databaseName);
+        mongoCollection = mongoDatabase.getCollection(collectionName, BsonDocument.class);
         return new Pair<>(databaseName, collectionName);
     }
 
-    private static String DownloadSingleFile(BsonDocument document, String localPath) {
+    private static String DownloadSingleFile(BsonDocument document, String localPath) throws IOException {
         var fileName = document.get("fileName").asString();
         var fileContent = document.get("fileContent").asBinary();
         var filePath = localPath + "/" + fileName;
-        var fileStream = new File(filePath);
-        fileStream.setWritable(true);
-        fileStream.Write(fileContent.Bytes);
-        fileStream.Dispose();
-
-        return filePath;
+        return Files.write(
+                Paths.get(filePath), fileContent.getData(), StandardOpenOption.CREATE, StandardOpenOption.WRITE).
+                toString();
     }
 
     /*
@@ -281,25 +280,20 @@ public class MangoDbHandle extends DataHandle {
 https://www.javappa.com/kurs-spring/spring-data-jpa-zapytania-wbudowane
      */
 
-    private static BsonDocument getBsonDocument(String localPath)
-     {
+    private static BsonDocument getBsonDocument(String localPath) throws IOException {
         var objectId = ObjectId.get();
-         var fileStream = new File(localPath);
-         fileStream.setReadOnly();
-         var fileName = fileStream.getName();
+        var fileStream = new File(localPath);
+        fileStream.setReadOnly();
+        var fileName = fileStream.getName();
+        var byteArray = Files.readAllBytes(Paths.get(localPath));
 
+        var data = new HashMap<String, BsonValue>();
+        data.put("id", new BsonObjectId(objectId));
+        data.put("fileName", new BsonString(fileName));
+        data.put("fileContent", new BsonBinary(byteArray));
 
-        var memoryStream = new MemoryStream();
-        fileStream.CopyTo(memoryStream);
-        var fileByteArray = memoryStream.ToArray();
-
-        var data = new HashMap<String, Object>();
-        data.put("id", objectId);
-        data.put("fileName", fileName);
-        data.put("fileContent", new BsonBinaryData(fileByteArray));
-
-        var bsonDocument = new BsonDocument(data);
-
+        var bsonDocument = new BsonDocument();
+        bsonDocument.putAll(data);
         return bsonDocument;
     }
 
