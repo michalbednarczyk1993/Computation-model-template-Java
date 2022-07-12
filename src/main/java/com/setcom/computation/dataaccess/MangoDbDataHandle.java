@@ -1,11 +1,9 @@
 package com.setcom.computation.dataaccess;
 
 import com.google.gson.Gson;
-import com.mongodb.client.MongoClient;
-import com.mongodb.client.MongoClients;
+import com.mongodb.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
-import com.mongodb.client.internal.MongoClientImpl;
 import com.mongodb.lang.Nullable;
 import com.setcom.computation.balticlsc.DataHandle;
 import com.setcom.computation.datamodel.DataMultiplicity;
@@ -16,9 +14,9 @@ import org.bson.types.ObjectId;
 import org.javatuples.Pair;
 import org.springframework.boot.configurationprocessor.json.JSONObject;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.net.Socket;
 import java.nio.file.*;
 import java.util.*;
 
@@ -54,7 +52,7 @@ public class MangoDbHandle extends DataHandle {
         if (collectionName.isEmpty())
             throw new IllegalArgumentException("Incorrect DataHandle.");
 
-        Prepare(databaseName, collectionName);
+        prepare(databaseName, collectionName);
 
         String localPath = "";
         String id = handle.getOrDefault("ObjectId", "");
@@ -107,7 +105,6 @@ public class MangoDbHandle extends DataHandle {
                 break;
             }
         }
-
         return localPath;
     }
 
@@ -176,31 +173,28 @@ public class MangoDbHandle extends DataHandle {
         }
     }
 
-    public short checkConnection(@Nullable HashMap<String, String> handle) {
+    public short checkConnection(@Nullable Map<String, String> handle) {
         String host = pinConfiguration.accessCredential.get("Host"),
                 port = pinConfiguration.accessCredential.get("Port");
+
         try {
-            using var tcpClient = new TcpClient(); // zobacz to (powinno byc w application.prop) https://stackoverflow.com/questions/54742728/how-to-give-mongodb-socketkeepalive-in-spring-boot-application
-            tcpClient.Connect(host, Integer.parseInt(port));
+            new Socket(host, Integer.parseInt(port));
         } catch (Exception e) {
             log.error("Unable to reach " + host + ":" + port);
             return -1;
         }
 
         try {
-            mongoClient = new MongoClientImpl(connectionString);
-            mongoClient.listDatabases(); // Co ona robi w C#? https://csharp.hotexamples.com/examples/MongoDB.Driver/MongoClient/ListDatabases/php-mongoclient-listdatabases-method-examples.html
-        } catch (MongoAuthenticationException e) {
-            log.error("Unable to authenticate to MongoDB");
-            return -2;
+            mongoClient = new MongoClient(connectionString);
+            mongoClient.listDatabases();
         } catch (Exception e) {
-            log.error("Error " + e + " while trying to connect to MongoDB");
+            log.error("Error " + e + " while trying to connect to Mongodb");
             return -1;
         }
 
         if (pinConfiguration.pinType.equals("input") && null != handle) {
             String databaseName, collectionName;
-            String id = null;
+            String id;
 
             if (handle.containsKey("Database")) {
                 databaseName = handle.get("Database");
@@ -223,16 +217,7 @@ public class MangoDbHandle extends DataHandle {
 
             try {
                 mongoDatabase = mongoClient.getDatabase(databaseName);
-                if (mongoDatabase == null) {
-                    log.error("No database " + databaseName);
-                    return -3;
-                }
-
                 mongoCollection = mongoDatabase.getCollection(collectionName, BsonDocument.class);
-                if (mongoCollection == null) {
-                    log.error("No collection " + collectionName);
-                    return -3;
-                }
 
                 if (pinConfiguration.dataMultiplicity == DataMultiplicity.SINGLE) {
                     var filter = eq("id", new ObjectId(id));
@@ -258,8 +243,7 @@ public class MangoDbHandle extends DataHandle {
     private Pair<String, String> prepare(@Nullable String databaseName, @Nullable String collectionName) {
         if (databaseName == null) databaseName = "baltic_database_"+ UUID.randomUUID().toString().substring(0, 8);
         if (collectionName == null) collectionName = "baltic_collection_"+UUID.randomUUID().toString().substring(0, 8);
-        //TODO to reset or not to reset
-        mongoClient = MongoClients.create(connectionString);
+        mongoClient = new MongoClient(connectionString);
         mongoDatabase = mongoClient.getDatabase(databaseName);
         mongoCollection = mongoDatabase.getCollection(collectionName, BsonDocument.class);
         return new Pair<>(databaseName, collectionName);
@@ -283,7 +267,9 @@ https://www.javappa.com/kurs-spring/spring-data-jpa-zapytania-wbudowane
     private static BsonDocument getBsonDocument(String localPath) throws IOException {
         var objectId = ObjectId.get();
         var fileStream = new File(localPath);
-        fileStream.setReadOnly();
+        if (!fileStream.setReadOnly()) {
+            log.error("Filed to set file as ReadOnly");
+        }
         var fileName = fileStream.getName();
         var byteArray = Files.readAllBytes(Paths.get(localPath));
 
