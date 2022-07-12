@@ -12,6 +12,7 @@ import org.bson.*;
 import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
 import org.javatuples.Pair;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.configurationprocessor.json.JSONObject;
 
 import java.io.File;
@@ -24,21 +25,28 @@ import static com.mongodb.client.model.Filters.*;
 
 
 @Slf4j
-public class MangoDbHandle extends DataHandle {
+public class MongoDbHandle extends DataHandle {
 
     private final String connectionString;
     private MongoClient mongoClient;
     private MongoDatabase mongoDatabase;
     private MongoCollection<BsonDocument> mongoCollection;
 
-    public MangoDbHandle(String pinName, JSONObject configuration) {
+    @Value("${spring.data.mongodb.username}")
+    private String user;
+    @Value("${spring.data.mongodb.password}")
+    private String password;
+    @Value("${spring.data.mongodb.host}")
+    private String host;
+    @Value("${spring.data.mongodb.port}")
+    private String port;
+
+    public MongoDbHandle(String pinName, JSONObject configuration) {
         super(pinName, configuration);
         connectionString = "mongodb://{PinConfiguration.AccessCredential[\"" + user + "\"]}" +
             ":{PinConfiguration.AccessCredential[\"" + password + "\"]}" +
             "@{PinConfiguration.AccessCredential[\"" + host + "\"]}" +
             ":{PinConfiguration.AccessCredential[\"" + port + "\"]}";
-        // to sie dzieje w application.properties - tutaj jest zbedne
-
     }
 
     @Override

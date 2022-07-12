@@ -2,6 +2,7 @@ package com.setcom.computation.balticlsc;
 
 import com.google.gson.Gson;
 import com.setcom.computation.apiaccess.TokensProxy;
+import com.setcom.computation.dataaccess.MongoDbHandle;
 import com.setcom.computation.datamodel.Status;
 import org.apache.http.ProtocolVersion;
 import org.apache.http.StatusLine;
@@ -78,7 +79,14 @@ public class DataHandler implements IDataHandler{
                     pinValues.getValue0().stream().map(v-> (v != null && !v.isEmpty()) ?
                             new Gson().fromJson(v, HashMap.class) : null).collect(Collectors.toList());
             DataHandle dHandle = GetDataHandle(pinName);
-            List<String> dataItems = valuesObject.stream().map(v-> (null != v) ? dHandle.Download(v) : null).
+            List<String> dataItems = valuesObject.stream().map(v-> {
+                        try {
+                            return (null != v) ? dHandle.Download(v) : null;
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                        return null;
+                    }).
                     collect(Collectors.toList());
             return new Pair<>(dataItems, pinValues.getValue1());
         } catch (IllegalArgumentException e) {
