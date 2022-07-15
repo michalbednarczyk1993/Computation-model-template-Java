@@ -7,7 +7,7 @@ import com.mongodb.client.MongoDatabase;
 import com.mongodb.lang.Nullable;
 import com.setcom.computation.balticlsc.DataHandle;
 import com.setcom.computation.datamodel.DataMultiplicity;
-import lombok.extern.slf4j.Slf4j; //TODO #6 Remove Lombok
+import lombok.extern.slf4j.Slf4j;
 import org.bson.*;
 import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
@@ -47,7 +47,7 @@ public class MongoDbHandle extends DataHandle {
     }
 
     @Override
-    public String download(HashMap<String, String> handle) throws Exception {
+    public String download(Map<String, String> handle) throws Exception {
         String databaseName = handle.getOrDefault("Database", "");
         String collectionName = handle.getOrDefault("Collection", "");
         if (!pinConfiguration.pinType.equals("input"))
@@ -107,7 +107,7 @@ public class MongoDbHandle extends DataHandle {
     }
 
     @Override
-    public HashMap<String, String> upload(String localPath) throws Exception {
+    public Map<String, String> upload(String localPath) throws Exception {
         if (pinConfiguration.pinType.equals("input"))
             throw new Exception("Upload cannot be called for input pins");
         if (!new File(localPath).exists())
@@ -119,7 +119,7 @@ public class MongoDbHandle extends DataHandle {
         if (pinConfiguration.dataMultiplicity.equals(DataMultiplicity.SINGLE) && isDirectory)
             throw new IllegalArgumentException("Single data pin requires path pointing to a file, not a directory");
 
-        HashMap<String, String> handle = null;
+        Map<String, String> handle = null;
         try {
             Pair<String, String> pair = prepare(null, null);
             String databaseName = pair.getValue0(), collectionName = pair.getValue1();
@@ -146,7 +146,7 @@ public class MongoDbHandle extends DataHandle {
                     for (String filePath : files) {
                         var bsonDocument = getBsonDocument(filePath);
                         mongoCollection.insertOne(bsonDocument);
-                        handleList.add(getTokenHandle(bsonDocument));
+                        handleList.add((HashMap<String, String>) getTokenHandle(bsonDocument));
                     }
 
                     handle = new HashMap<>();
@@ -278,8 +278,8 @@ public class MongoDbHandle extends DataHandle {
         return bsonDocument;
     }
 
-    private static HashMap<String, String> getTokenHandle(BsonDocument document) {
-        HashMap<String, String> map = new HashMap<>();
+    private static Map<String, String> getTokenHandle(BsonDocument document) {
+        Map<String, String> map = new HashMap<>();
         map.put("FileName", String.valueOf(document.get("fileName").asString()));
         map.put("ObjectId", document.get("id").asObjectId().toString());
         return map;

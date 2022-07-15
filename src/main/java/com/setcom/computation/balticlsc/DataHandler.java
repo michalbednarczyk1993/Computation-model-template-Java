@@ -18,7 +18,7 @@ import java.util.stream.Collectors;
 
 public class DataHandler implements IDataHandler{
 
-    private final HashMap<String, DataHandle> dataHandles;
+    private final Map<String, DataHandle> dataHandles;
     private final TokensProxy tokensProxy;
     private final JobRegistry registry;
     private final JSONObject configuration;
@@ -70,7 +70,7 @@ public class DataHandler implements IDataHandler{
     public Pair<List<String>, long[]> obtainDataItemsNDim(String pinName) {
         try {
             Pair<List<String>, long[]> pinValues = registry.getPinValuesNDim(pinName);
-            List<HashMap<String,String>> valuesObject =
+            List<Map<String,String>> valuesObject =
                     pinValues.getValue0().stream().map(v-> (v != null && !v.isEmpty()) ?
                             new Gson().fromJson(v, HashMap.class) : null).collect(Collectors.toList());
             DataHandle dHandle = GetDataHandle(pinName);
@@ -101,7 +101,7 @@ public class DataHandler implements IDataHandler{
         if (registry.getPinConfiguration(pinName).accessType.equals("Direct"))
             return sendToken(pinName, data, isFinal, msgUid);
         DataHandle dHandle = GetDataHandle(pinName);
-        HashMap<String,String> newHandle = dHandle.upload(data);
+        Map<String,String> newHandle = dHandle.upload(data);
         return sendToken(pinName, new Gson().toJson(newHandle), isFinal, msgUid);
     }
 

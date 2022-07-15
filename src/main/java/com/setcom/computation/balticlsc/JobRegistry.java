@@ -17,8 +17,8 @@ import java.util.stream.Collectors;
 public class JobRegistry implements IJobRegistry {
 
     private volatile List<JobThread> jobThreads;
-    private final HashMap<String, List<InputTokenMessage>> tokens;
-    private final HashMap<String, Object> variables;
+    private final Map<String, List<InputTokenMessage>> tokens;
+    private final Map<String, Object> variables;
     private final JobStatus status;
     private static volatile List<PinConfiguration> pins;
 
