@@ -9,44 +9,44 @@ import java.util.List;
 public interface IJobRegistry {
     ///
     /// <param name="pinName"></param>
-    Status GetPinStatus(String pinName) throws InterruptedException;
+    Status getPinStatus(String pinName) throws InterruptedException;
 
     ///
     /// <param name="pinName"></param>
-    String GetPinValue(String pinName) throws Exception;
+    String getPinValue(String pinName) throws Exception;
 
     ///
     /// <param name="pinName"></param>
-    List<String> GetPinValues(String pinName) throws Exception;
+    List<String> getPinValues(String pinName) throws Exception;
 
     ///
     /// <param name="pinName"></param>
-    Pair<List<String>, long[]> GetPinValuesNDim(String pinName) throws InterruptedException;
+    Pair<List<String>, long[]> getPinValuesNDim(String pinName) throws InterruptedException;
 
     ///
     /// <param name="pinName"></param>
-    List<InputTokenMessage> GetPinTokens(String pinName);
+    List<InputTokenMessage> getPinTokens(String pinName);
 
     ///
     /// <param name="progress"></param>
-    void SetProgress(long progress);
+    void setProgress(long progress);
 
-    long GetProgress();
+    long getProgress();
 
     ///
     /// <param name="status"></param>
-    void SetStatus(Status status);
+    void setStatus(Status status);
 
     ///
     /// <param name="name"></param>
     /// <param name="value"></param>
-    void SetVariable(String name, String value);
+    void setVariable(String name, String value);
 
     ///
     /// <param name="name"></param>
-    Object GetVariable(String name);
+    Object getVariable(String name);
 
     ///
     /// <param name="name"></param>
-    String GetEnvironmentVariable(String name);
+    String getEnvironmentVariable(String name);
 }

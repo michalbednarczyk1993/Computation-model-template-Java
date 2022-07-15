@@ -63,12 +63,12 @@ public class JobRegistry implements IJobRegistry {
      * @return
      * @throws InterruptedException
      */
-    public Status GetPinStatus(String pinName) throws InterruptedException {
+    public Status getPinStatus(String pinName) throws InterruptedException {
         semaphore.wait();
         try {
             if (0 == tokens.get(pinName).size())
                 return Status.IDLE;
-            if (TokenMultiplicity.SINGLE == GetPinConfigurationInternal(pinName).tokenMultiplicity)
+            if (TokenMultiplicity.SINGLE == getPinConfigurationInternal(pinName).tokenMultiplicity)
                 return Status.COMPLETED;
 
             InputTokenMessage finalToken = tokens.get(pinName).
@@ -85,26 +85,30 @@ public class JobRegistry implements IJobRegistry {
         }
     }
 
-    public String GetPinValue(String pinName) throws Exception {
-        Pair<List<String>, long[]> pair = GetPinValuesNDim(pinName);
+    public String getPinValue(String pinName) throws Exception {
+        Pair<List<String>, long[]> pair = getPinValuesNDim(pinName);
         List<String> values = pair.getValue0();
         long[] sizes = pair.getValue1();
 
-        if (null == values || 0 == values.size())
+        if (null == values || 0 == values.size()) {
             return null;
-        if (null == sizes && 1 == values.size())
+        } else if (null == sizes && 1 == values.size()) {
             return values.get(0);
-        throw new Exception("Improper call - more than one token exists for the pin");
+        } else {
+            throw new Exception("Improper call - more than one token exists for the pin");
+        }
     }
 
-    public List<String> GetPinValues(String pinName) throws Exception {
-        Pair<List<String>, long[]> pair = GetPinValuesNDim(pinName);
+    public List<String> getPinValues(String pinName) throws Exception {
+        Pair<List<String>, long[]> pair = getPinValuesNDim(pinName);
         List<String> values = pair.getValue0();
         long[] sizes = pair.getValue1();
 
-        if (sizes != null && sizes.length == 1)
+        if (sizes != null && sizes.length == 1) {
             return values;
-        throw new Exception("Improper call - more than one dimension exists for the pin");
+        } else {
+            throw new Exception("Improper call - more than one dimension exists for the pin");
+        }
     }
 
     /**
@@ -112,7 +116,7 @@ public class JobRegistry implements IJobRegistry {
      * @param pinName
      * @return
      */
-    public Pair<List<String>, long[]> GetPinValuesNDim(String pinName) {
+    public Pair<List<String>, long[]> getPinValuesNDim(String pinName) {
         try {
             semaphore.wait();
 
@@ -120,10 +124,9 @@ public class JobRegistry implements IJobRegistry {
                 return new Pair<>(null, null);
 
             // Single token pin:
-            if (TokenMultiplicity.SINGLE == GetPinConfigurationInternal(pinName).tokenMultiplicity)
+            if (TokenMultiplicity.SINGLE == getPinConfigurationInternal(pinName).tokenMultiplicity)
                 return new Pair<>(new ArrayList<>(Collections.singleton(tokens.get(pinName).
                         stream().findFirst().orElse(new InputTokenMessage()).values)), null);
-
 
             // Multiple token pin:
             long[] maxTableCounts = new long[tokens.get(pinName).
@@ -133,13 +136,11 @@ public class JobRegistry implements IJobRegistry {
                 if (maxTableCounts[i] < message.tokenSeqStack.get(i).no)
                     maxTableCounts[i] = message.tokenSeqStack.get(i).no;
 
-
             long allTokenCount = 1;
             for (long index : maxTableCounts)
             allTokenCount *= index + 1;
 
             String[] result = new String[(int) allTokenCount];
-
             for (InputTokenMessage message : tokens.get(pinName)) {
                 long index = 0;
                 long product = 1;
@@ -160,7 +161,7 @@ public class JobRegistry implements IJobRegistry {
         return null;
     }
 
-    public List<InputTokenMessage> GetPinTokens(String pinName) {
+    public List<InputTokenMessage> getPinTokens(String pinName) {
         try {
             semaphore.wait();
             return tokens.get(pinName);
@@ -176,7 +177,7 @@ public class JobRegistry implements IJobRegistry {
      *
      * @param progress
      */
-    public void SetProgress(long progress) {
+    public void setProgress(long progress) {
         try {
             semaphore.wait();
             status.jobProgress = progress;
@@ -189,7 +190,7 @@ public class JobRegistry implements IJobRegistry {
         }
     }
 
-    public long GetProgress() {
+    public long getProgress() {
         try {
             semaphore.wait();
             return status.jobProgress;
@@ -205,7 +206,7 @@ public class JobRegistry implements IJobRegistry {
      *
      * @param status
      */
-    public void SetStatus(Status status) {
+    public void setStatus(Status status) {
         try {
             semaphore.wait();
             this.status.status = status;
@@ -233,7 +234,7 @@ public class JobRegistry implements IJobRegistry {
      * @param name
      * @param value
      */
-    public void SetVariable(String name, String value) {
+    public void setVariable(String name, String value) {
         try {
             semaphore.wait();
             variables.put(name, value);
@@ -249,7 +250,7 @@ public class JobRegistry implements IJobRegistry {
      * @param name
      * @return
      */
-    public Object GetVariable(String name) {
+    public Object getVariable(String name) {
         try {
             semaphore.wait();
             return variables.get(name);
@@ -261,14 +262,14 @@ public class JobRegistry implements IJobRegistry {
         }
     }
 
-    public String GetEnvironmentVariable(String name) {
+    public String getEnvironmentVariable(String name) {
         return System.getenv(name);
     }
 
-    public PinConfiguration GetPinConfiguration(String pinName) {
+    public PinConfiguration getPinConfiguration(String pinName) {
         try {
             semaphore.wait();
-            return GetPinConfigurationInternal(pinName);
+            return getPinConfigurationInternal(pinName);
         } catch (InterruptedException e) {
             log.error(e.getMessage());
             return null;
@@ -277,11 +278,11 @@ public class JobRegistry implements IJobRegistry {
         }
     }
 
-    private PinConfiguration GetPinConfigurationInternal(String pinName) {
+    private PinConfiguration getPinConfigurationInternal(String pinName) {
         return pins.stream().filter(x-> x.pinName.equals(pinName)).findFirst().orElse(null);
     }
 
-    public List<String> GetStrongPinNames() {
+    public List<String> getStrongPinNames() {
         try {
             semaphore.wait();
             List<String> result = new ArrayList<>();
@@ -295,7 +296,7 @@ public class JobRegistry implements IJobRegistry {
         }
     }
 
-    public String GetBaseMsgUid() {
+    public String getBaseMsgUid() {
         try {
             semaphore.wait();
             return Objects.requireNonNull(Objects.requireNonNull(
@@ -309,7 +310,7 @@ public class JobRegistry implements IJobRegistry {
         return null;
     }
 
-    public List<String> GetAllMsgUids() {
+    public List<String> getAllMsgUids() {
         try {
             semaphore.wait();
             List<String> result = new ArrayList<>();
@@ -323,7 +324,7 @@ public class JobRegistry implements IJobRegistry {
         }
     }
 
-    public void ClearMessages(List<String> msgUids) {
+    public void clearMessages(List<String> msgUids) {
         for (String msgUid : msgUids) {
             List<List<InputTokenMessage>> list = new ArrayList<>(tokens.values());
             list.forEach(it-> it.forEach(it2-> {
@@ -334,7 +335,7 @@ public class JobRegistry implements IJobRegistry {
         }
     }
 
-    public void RegisterToken(InputTokenMessage msg) {
+    public void registerToken(InputTokenMessage msg) {
         tokens.get(msg.pinName).add(msg);
     }
 }

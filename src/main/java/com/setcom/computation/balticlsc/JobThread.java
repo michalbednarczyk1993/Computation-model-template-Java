@@ -13,8 +13,7 @@ public class JobThread {
     private final JobRegistry registry;
     private final DataHandler handler;
 
-    public JobThread(String pinName, TokenListener listener, JobRegistry registry, DataHandler handler)
-    {
+    public JobThread(String pinName, TokenListener listener, JobRegistry registry, DataHandler handler) {
         this.pinName = pinName;
         this.listener = listener;
         this.registry = registry;
@@ -22,31 +21,27 @@ public class JobThread {
     }
 
     public void run(){
-        try
-        {
+        try {
             listener.dataReceived(pinName);
-            if ("true".equals(registry.GetPinConfiguration(pinName).isRequired))
+            if ("true".equals(registry.getPinConfiguration(pinName).isRequired))
                 listener.optionalDataReceived(pinName);
             Status pinAggregatedStatus = Status.COMPLETED;
-            for(String pinName : registry.GetStrongPinNames())
-            {
-                Status pinStatus = registry.GetPinStatus(pinName);
+            for(String pinName : registry.getStrongPinNames()) {
+                Status pinStatus = registry.getPinStatus(pinName);
                 if (Status.WORKING == pinStatus)
                     pinAggregatedStatus = Status.WORKING;
-                else if (Status.IDLE == pinStatus)
-                {
+                else if (Status.IDLE == pinStatus) {
                     pinAggregatedStatus = Status.IDLE;
                     break;
                 }
-            };
+            }
 
             if (Status.IDLE != pinAggregatedStatus)
                 listener.dataReady();
             if (Status.COMPLETED == pinAggregatedStatus)
                 listener.dataComplete();
-        }
-        catch (Exception e)
-        {
+
+        } catch (Exception e) {
             log.error("Error of type" + e.getClass() +": " + e.getMessage() + "\n"+ Arrays.toString(e.getStackTrace()));
             handler.FailProcessing(e.getMessage());
         }

@@ -13,7 +13,7 @@ public interface IDataHandler {
      * @return
      * @throws Exception
      */
-    String ObtainDataItem(String pinName) throws Exception;
+    String obtainDataItem(String pinName) throws Exception;
 
     /**
      *
@@ -21,14 +21,14 @@ public interface IDataHandler {
      * @return
      * @throws Exception
      */
-    List<String> ObtainDataItems(String pinName) throws Exception;
+    List<String> obtainDataItems(String pinName) throws Exception;
 
     /**
      *
      * @param pinName
      * @return
      */
-    Pair<List<String>, long[]> ObtainDataItemsNDim(String pinName);
+    Pair<List<String>, long[]> obtainDataItemsNDim(String pinName);
 
     /**
      *
@@ -38,7 +38,7 @@ public interface IDataHandler {
      * @param msgUid
      * @return
      */
-    short SendDataItem(String pinName, String data, boolean isFinal, @Nullable String msgUid) throws Exception;
+    short sendDataItem(String pinName, String data, boolean isFinal, @Nullable String msgUid) throws Exception;
 
     /**
      *
@@ -48,9 +48,9 @@ public interface IDataHandler {
      * @param msgUid
      * @return
      */
-    short SendToken(String pinName, String values, boolean isFinal, @Nullable String msgUid);
+    short sendToken(String pinName, String values, boolean isFinal, @Nullable String msgUid);
 
-    short FinishProcessing();
+    short finishProcessing();
 
     /**
      *
@@ -58,5 +58,5 @@ public interface IDataHandler {
      * @param isFinal
      * @return
      */
-    short SendAckToken(List<String> msgUids, boolean isFinal);
+    short sendAckToken(List<String> msgUids, boolean isFinal);
 }

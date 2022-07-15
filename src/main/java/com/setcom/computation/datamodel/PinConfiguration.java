@@ -4,6 +4,7 @@ import org.springframework.boot.configurationprocessor.json.JSONException;
 import org.springframework.boot.configurationprocessor.json.JSONObject;
 
 import java.util.HashMap;
+import java.util.Map;
 
 public class PinConfiguration {
 
@@ -13,7 +14,7 @@ public class PinConfiguration {
     public final String accessType;
     public final DataMultiplicity dataMultiplicity;
     public final TokenMultiplicity tokenMultiplicity;
-    public final HashMap<String, String> accessCredential;
+    public final Map<String, String> accessCredential;
 
     public PinConfiguration(JSONObject section) throws JSONException {
         this.pinName = section.getString("PinName");

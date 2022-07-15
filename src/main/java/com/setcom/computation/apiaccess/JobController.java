@@ -35,17 +35,17 @@ public class  JobController {
     public ResponseEntity<String> processTokenMessage(@RequestBody InputTokenMessage value) {
         try {
             log.info("Token message received: " + value);
+            //TODO #2
             // There is no need to Deserialize Object from JSON format (like with Jackson mapper),
             // because @RequestBody annotation will do it by itself.
-            registry.RegisterToken(value);
+            registry.registerToken(value);
             try {
                 String retMessage;
                 short result = handler.checkConnection(value.pinName, new Hashtable<>(value.values.length()));
                 /*
                 short result = _handler.CheckConnection(inputToken.PinName,
                         JsonConvert.DeserializeObject<Dictionary<string, string>>(inputToken.Values));
-                        //TODO coś tu chyba nie gra z mapowaniem Values na Dictionary...
-
+                        //TODO #3  coś tu chyba nie gra z mapowaniem Values na Dictionary...
                  */
                 switch (result) {
                     case 0:
@@ -54,6 +54,7 @@ public class  JobController {
                         var threadTask = new Thread();
                         threadTask.start();
                         /*
+                        //TODO #4
                         // Nie jestem pewien czy to dobrze zrobiłem.
                         // Nie wiem w ogóle czy to nie jest tak, że Spring ogarnia takie rzeczy i czy nie mogę po prostu
                         // wrzucic jobThread::run

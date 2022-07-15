@@ -8,7 +8,9 @@ import java.util.List;
 
 public class ConfigurationHandle {
     public static List<PinConfiguration> GetPinsConfiguration(JSONObject configuration) throws JSONException {
-//        var pinsSections = configuration.getJSONArray("Pins").name
+
+        //TODO #1
+        //        var pinsSections = configuration.getJSONArray("Pins").name
 //        //var pinsSections = configuration.GetSection("Pins").GetChildren();
 //        return pinsSections.Select(configurationSection => new PinConfiguration(configurationSection)).ToList();
         return null;

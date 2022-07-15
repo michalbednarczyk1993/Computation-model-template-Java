@@ -1,5 +1,6 @@
 package com.setcom.computation.datamodel;
 
-public enum TokenMultiplicity {
+public enum
+TokenMultiplicity {
     SINGLE, MULTIPLE
 }

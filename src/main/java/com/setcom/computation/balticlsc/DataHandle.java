@@ -1,7 +1,6 @@
 package com.setcom.computation.balticlsc;
 
 import com.setcom.computation.datamodel.PinConfiguration;
-import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.configurationprocessor.json.JSONException;
 import org.springframework.boot.configurationprocessor.json.JSONObject;
@@ -30,8 +29,7 @@ public abstract class DataHandle {
      * @param pinName
      * @param configuration
      */
-    protected DataHandle(String pinName, JSONObject configuration)
-    {
+    protected DataHandle(String pinName, JSONObject configuration) {
         localPath = System.getenv("LOCAL_TMP_PATH") != null ?
                 System.getenv("LOCAL_TMP_PATH") : "/balticLSC_tmp";
 
@@ -61,7 +59,7 @@ public abstract class DataHandle {
      * @param handle
      * @return
      */
-    public abstract String Download(HashMap<String, String> handle) throws Exception;
+    public abstract String download(HashMap<String, String> handle) throws Exception;
 
     /**
      *
@@ -70,8 +68,7 @@ public abstract class DataHandle {
      */
     public abstract HashMap<String, String> upload(String localPath) throws Exception;
 
-    protected void clearLocal()
-    {
+    protected void clearLocal() {
         try {
             File directory = new File(localPath);
             if (directory.exists()) {
@@ -99,10 +96,8 @@ public abstract class DataHandle {
         }
     }
 
-    private String getNameWithGuid(String name)
-    {
-        if(name.startsWith(BALTIC_DATA_PREFIX))
-        {
+    private String getNameWithGuid(String name) {
+        if(name.startsWith(BALTIC_DATA_PREFIX)) {
             return new StringBuilder(name).delete(BALTIC_DATA_PREFIX.length(), BALTIC_DATA_PREFIX.length() + GUID_LENGTH).
                     insert(BALTIC_DATA_PREFIX.length(), UUID.randomUUID().toString().substring(0, GUID_LENGTH)).toString();
         }

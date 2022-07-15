@@ -28,8 +28,7 @@ public class DataHandler implements IDataHandler{
      * @param registry
      * @param configuration
      */
-    public DataHandler(JobRegistry registry, JSONObject configuration)
-    {
+    public DataHandler(JobRegistry registry, JSONObject configuration) {
         this.registry = registry;
         this.tokensProxy = new TokensProxy();
         this.configuration = configuration;
@@ -42,8 +41,8 @@ public class DataHandler implements IDataHandler{
      * @return
      * @throws Exception
      */
-    public String ObtainDataItem(String pinName) throws Exception{
-        Pair<List<String>, long[]> obtainData = ObtainDataItemsNDim(pinName);
+    public String obtainDataItem(String pinName) throws Exception{
+        Pair<List<String>, long[]> obtainData = obtainDataItemsNDim(pinName);
         if (null == obtainData.getValue0() || 0 == obtainData.getValue0().size())
             return null;
         if (null == obtainData.getValue1() && 1 == obtainData.getValue0().size())
@@ -56,10 +55,8 @@ public class DataHandler implements IDataHandler{
      * @param pinName
      * @return
      */
-    public List<String> ObtainDataItems(String pinName) throws Exception {
-        List<String> values;
-        long[] sizes;
-        Pair<List<String>, long[]> obtainData = ObtainDataItemsNDim(pinName);
+    public List<String> obtainDataItems(String pinName) throws Exception {
+        Pair<List<String>, long[]> obtainData = obtainDataItemsNDim(pinName);
         if (null != obtainData.getValue1() && 1 == obtainData.getValue1().length)
         return obtainData.getValue0();
         throw new Exception("Improper call - more than one dimension exists for the pin");
@@ -70,18 +67,16 @@ public class DataHandler implements IDataHandler{
      * @param pinName
      * @return
      */
-    public Pair<List<String>, long[]> ObtainDataItemsNDim(String pinName) {
+    public Pair<List<String>, long[]> obtainDataItemsNDim(String pinName) {
         try {
-            List<String> values;
-            long[] sizes;
-            Pair<List<String>, long[]> pinValues = registry.GetPinValuesNDim(pinName);
+            Pair<List<String>, long[]> pinValues = registry.getPinValuesNDim(pinName);
             List<HashMap<String,String>> valuesObject =
                     pinValues.getValue0().stream().map(v-> (v != null && !v.isEmpty()) ?
                             new Gson().fromJson(v, HashMap.class) : null).collect(Collectors.toList());
             DataHandle dHandle = GetDataHandle(pinName);
             List<String> dataItems = valuesObject.stream().map(v-> {
                         try {
-                            return (null != v) ? dHandle.Download(v) : null;
+                            return (null != v) ? dHandle.download(v) : null;
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
@@ -90,7 +85,7 @@ public class DataHandler implements IDataHandler{
                     collect(Collectors.toList());
             return new Pair<>(dataItems, pinValues.getValue1());
         } catch (IllegalArgumentException e) {
-            return registry.GetPinValuesNDim(pinName);
+            return registry.getPinValuesNDim(pinName);
         }
     }
 
@@ -102,12 +97,12 @@ public class DataHandler implements IDataHandler{
      * @param msgUid
      * @return
      */
-    public short SendDataItem(String pinName, String data, boolean isFinal, @Nullable String msgUid) throws Exception {
-        if (registry.GetPinConfiguration(pinName).accessType.equals("Direct"))
-            return SendToken(pinName, data, isFinal, msgUid);
+    public short sendDataItem(String pinName, String data, boolean isFinal, @Nullable String msgUid) throws Exception {
+        if (registry.getPinConfiguration(pinName).accessType.equals("Direct"))
+            return sendToken(pinName, data, isFinal, msgUid);
         DataHandle dHandle = GetDataHandle(pinName);
         HashMap<String,String> newHandle = dHandle.upload(data);
-        return SendToken(pinName, new Gson().toJson(newHandle), isFinal, msgUid);
+        return sendToken(pinName, new Gson().toJson(newHandle), isFinal, msgUid);
     }
 
     /**
@@ -118,27 +113,27 @@ public class DataHandler implements IDataHandler{
      * @param msgUid
      * @return
      */
-    public short SendToken(String pinName, String values, boolean isFinal, @Nullable String msgUid) {
+    public short sendToken(String pinName, String values, boolean isFinal, @Nullable String msgUid) {
         if (null == msgUid)
-            msgUid = registry.GetBaseMsgUid();
+            msgUid = registry.getBaseMsgUid();
         StatusLine status = new BasicStatusLine(
                 new ProtocolVersion("HTTP", 2, 0), 200, "");
         return status.equals(tokensProxy.SendOutputToken(pinName, values, msgUid, isFinal)) ? (short)0 : (short)-1;
     }
 
-    public short FinishProcessing() {
-        List<String> msgUids = registry.GetAllMsgUids();
-        registry.SetStatus(Status.COMPLETED);
-        return SendAckToken(msgUids, true);
+    public short finishProcessing() {
+        List<String> msgUids = registry.getAllMsgUids();
+        registry.setStatus(Status.COMPLETED);
+        return sendAckToken(msgUids, true);
     }
 
     public short FailProcessing(String note) {
-        List<String> msgUids = registry.GetAllMsgUids();
-        registry.SetStatus(Status.FAILED);
+        List<String> msgUids = registry.getAllMsgUids();
+        registry.setStatus(Status.FAILED);
         StatusLine status = new BasicStatusLine(
                 new ProtocolVersion("HTTP", 2, 0), 200, "");
         if (status.equals(tokensProxy.SendAckToken(msgUids, true, true, note))) {
-            registry.ClearMessages(msgUids);
+            registry.clearMessages(msgUids);
             return 0;
         }
         return -1;
@@ -150,11 +145,11 @@ public class DataHandler implements IDataHandler{
      * @param isFinal
      * @return
      */
-    public short SendAckToken(List<String> msgUids, boolean isFinal) {
+    public short sendAckToken(List<String> msgUids, boolean isFinal) {
         StatusLine status = new BasicStatusLine(
                 new ProtocolVersion("HTTP", 2, 0), 200, "");
         if (status.equals(tokensProxy.SendAckToken(msgUids, isFinal))) {
-            registry.ClearMessages(msgUids);
+            registry.clearMessages(msgUids);
             return 0;
         }
         return -1;
@@ -178,7 +173,7 @@ public class DataHandler implements IDataHandler{
     private DataHandle GetDataHandle(String pinName) {
         if (null != dataHandles.get(pinName))
             return dataHandles.get(pinName);
-        String accessType = registry.GetPinConfiguration(pinName).accessType;
+        String accessType = registry.getPinConfiguration(pinName).accessType;
         DataHandle handle;
         switch (accessType) {
             case "Direct":

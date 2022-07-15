@@ -7,7 +7,7 @@ import com.mongodb.client.MongoDatabase;
 import com.mongodb.lang.Nullable;
 import com.setcom.computation.balticlsc.DataHandle;
 import com.setcom.computation.datamodel.DataMultiplicity;
-import lombok.extern.slf4j.Slf4j;
+import lombok.extern.slf4j.Slf4j; //TODO #6 Remove Lombok
 import org.bson.*;
 import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
@@ -23,15 +23,12 @@ import java.util.*;
 
 import static com.mongodb.client.model.Filters.*;
 
-
 @Slf4j
 public class MongoDbHandle extends DataHandle {
-
-    private final String connectionString;
     private MongoClient mongoClient;
     private MongoDatabase mongoDatabase;
     private MongoCollection<BsonDocument> mongoCollection;
-
+    private final String connectionString;
     @Value("${spring.data.mongodb.username}")
     private String user;
     @Value("${spring.data.mongodb.password}")
@@ -50,7 +47,7 @@ public class MongoDbHandle extends DataHandle {
     }
 
     @Override
-    public String Download(HashMap<String, String> handle) throws Exception {
+    public String download(HashMap<String, String> handle) throws Exception {
         String databaseName = handle.getOrDefault("Database", "");
         String collectionName = handle.getOrDefault("Collection", "");
         if (!pinConfiguration.pinType.equals("input"))
@@ -65,17 +62,15 @@ public class MongoDbHandle extends DataHandle {
         String localPath = "";
         String id = handle.getOrDefault("ObjectId", "");
         switch (pinConfiguration.dataMultiplicity) {
-            case SINGLE:
-            {
+            case SINGLE: {
                 if (id.isEmpty())
                     throw new IllegalArgumentException("Incorrect DataHandle.");
                 try {
                     log.info("Downloading object with id: " + id);
-                    //var filter = Builders<BsonDocument>.filter.eq("_id", new ObjectId(id));
                     Bson filter = eq("id", new ObjectId(id));
-                    var document = mongoCollection.find(filter).first(); //firstOrDefault();
+                    var document = mongoCollection.find(filter).first();
                     if (document != null) {
-                        localPath = DownloadSingleFile(document, this.localPath);
+                        localPath = downloadSingleFile(document, this.localPath);
                         log.info("Downloading object with id: " + id + "successful.");
                     } else {
                         log.info("Can not find object with id: " + id);
@@ -86,11 +81,8 @@ public class MongoDbHandle extends DataHandle {
                     clearLocal();
                     throw e;
                 }
-
                 break;
-            }
-            case MULTIPLE:
-            {
+            } case MULTIPLE: {
                 try {
                     log.info("Downloading all files from " + collectionName);
                     localPath = localPath + "/" + collectionName;
@@ -100,16 +92,14 @@ public class MongoDbHandle extends DataHandle {
                     }
                     var filter = empty();
                     for (BsonDocument bsonDocument : mongoCollection.find(filter))
-                        DownloadSingleFile(bsonDocument, localPath);
+                        downloadSingleFile(bsonDocument, localPath);
                     addGuidToFilesName(localPath);
                     log.info("Downloading all files from " + collectionName + " successful.");
-                }
-                catch (Exception e) {
+                } catch (Exception e) {
                     log.error("Downloading all files from collection " + collectionName + " failed.");
                     clearLocal();
                     throw e;
                 }
-
                 break;
             }
         }
@@ -135,8 +125,7 @@ public class MongoDbHandle extends DataHandle {
             String databaseName = pair.getValue0(), collectionName = pair.getValue1();
 
             switch (pinConfiguration.dataMultiplicity) {
-                case SINGLE:
-                {
+                case SINGLE: {
                     log.info("Uploading file from " + localPath + " to collection " + collectionName);
 
                     var bsonDocument = getBsonDocument(localPath);
@@ -149,8 +138,7 @@ public class MongoDbHandle extends DataHandle {
                     log.info("Upload file from " + localPath + " successful.");
                     break;
                 }
-                case MULTIPLE:
-                {
+                case MULTIPLE: {
                     log.info("Uploading directory from " + localPath + " to collection " + collectionName);
                     var files = getAllFiles(localPath);
                     var handleList = new ArrayList<HashMap<String, String>>();
@@ -172,8 +160,7 @@ public class MongoDbHandle extends DataHandle {
             }
 
             return handle;
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             log.error("Error: " + e + "\n Uploading from " + localPath +  " failed.");
             throw e;
         } finally {
@@ -257,7 +244,7 @@ public class MongoDbHandle extends DataHandle {
         return new Pair<>(databaseName, collectionName);
     }
 
-    private static String DownloadSingleFile(BsonDocument document, String localPath) throws IOException {
+    private static String downloadSingleFile(BsonDocument document, String localPath) throws IOException {
         var fileName = document.get("fileName").asString();
         var fileContent = document.get("fileContent").asBinary();
         var filePath = localPath + "/" + fileName;
@@ -267,9 +254,9 @@ public class MongoDbHandle extends DataHandle {
     }
 
     /*
-
+    //TODO #7 zobaczyć czy to w ogóle jest przydatne
     https://www.baeldung.com/spring-data-derived-queries
-https://www.javappa.com/kurs-spring/spring-data-jpa-zapytania-wbudowane
+    https://www.javappa.com/kurs-spring/spring-data-jpa-zapytania-wbudowane
      */
 
     private static BsonDocument getBsonDocument(String localPath) throws IOException {
@@ -281,7 +268,7 @@ https://www.javappa.com/kurs-spring/spring-data-jpa-zapytania-wbudowane
         var fileName = fileStream.getName();
         var byteArray = Files.readAllBytes(Paths.get(localPath));
 
-        var data = new HashMap<String, BsonValue>();
+        Map<String, BsonValue> data = new HashMap<>();
         data.put("id", new BsonObjectId(objectId));
         data.put("fileName", new BsonString(fileName));
         data.put("fileContent", new BsonBinary(byteArray));
