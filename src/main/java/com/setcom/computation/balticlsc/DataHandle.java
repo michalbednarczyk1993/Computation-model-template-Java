@@ -34,7 +34,7 @@ public abstract class DataHandle {
                 System.getenv("LOCAL_TMP_PATH") : "/balticLSC_tmp";
 
         try {
-            pinConfiguration = Objects.requireNonNull(ConfigurationHandle.GetPinsConfiguration(configuration)).
+            pinConfiguration = Objects.requireNonNull(ConfigurationHandle.getPinsConfiguration(configuration)).
                     stream().filter((x)-> x.pinName.equals(pinName)).findAny().orElse(null);
         } catch (JSONException e) {
             log.error("Error while parsing configuration.");

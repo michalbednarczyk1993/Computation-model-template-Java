@@ -27,7 +27,7 @@ public class JobRegistry implements IJobRegistry {
     @Autowired
     public JobRegistry(JSONObject config) throws JSONException {
         try {
-            pins = ConfigurationHandle.GetPinsConfiguration(config);
+            pins = ConfigurationHandle.getPinsConfiguration(config);
         } catch (JSONException e) {
             log.error("Error while parsing configuration.");
             throw e;

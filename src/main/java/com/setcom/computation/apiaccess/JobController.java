@@ -1,5 +1,7 @@
 package com.setcom.computation.apiaccess;
 
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import com.setcom.computation.balticlsc.DataHandler;
 import com.setcom.computation.balticlsc.JobRegistry;
 import com.setcom.computation.balticlsc.JobThread;
@@ -13,7 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Arrays;
-import java.util.Hashtable;
+import java.util.Map;
 
 
 @Slf4j
@@ -35,18 +37,12 @@ public class  JobController {
     public ResponseEntity<String> processTokenMessage(@RequestBody InputTokenMessage value) {
         try {
             log.info("Token message received: " + value);
-            //TODO #2
-            // There is no need to Deserialize Object from JSON format (like with Jackson mapper),
-            // because @RequestBody annotation will do it by itself.
             registry.registerToken(value);
             try {
                 String retMessage;
-                short result = handler.checkConnection(value.pinName, new Hashtable<>(value.values.length()));
-                /*
-                short result = _handler.CheckConnection(inputToken.PinName,
-                        JsonConvert.DeserializeObject<Dictionary<string, string>>(inputToken.Values));
-                        //TODO #3  coś tu chyba nie gra z mapowaniem Values na Dictionary...
-                 */
+                short result = handler.checkConnection(
+                        value.pinName,
+                        new Gson().fromJson(value.toString(), new TypeToken<Map<String, String>>(){}.getType()));
                 switch (result) {
                     case 0:
                         JobThread jobThread = new JobThread(value.pinName, listener, registry, handler);
