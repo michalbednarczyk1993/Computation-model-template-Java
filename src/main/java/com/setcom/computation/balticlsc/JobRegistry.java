@@ -57,12 +57,6 @@ public class JobRegistry implements IJobRegistry {
         }
     }
 
-    /**
-     *
-     * @param pinName
-     * @return
-     * @throws InterruptedException
-     */
     public Status getPinStatus(String pinName) throws InterruptedException {
         semaphore.wait();
         try {
