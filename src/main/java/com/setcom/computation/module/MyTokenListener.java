@@ -13,6 +13,7 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -94,49 +95,40 @@ public class MyTokenListener extends TokenListener {
         private void compute(int n, int m, double[][] A, double[] b, double[] c, boolean isMaximize) {
                 try {
                         IloCplex cplex = new IloCplex(); // an empty model
-
-                        // An array of decision variables
-                        // each variable has range from 0 to +INF
-                        IloNumVar[] x = new IloNumVar[n];
-                        for (int i = 0; i < n; i++) {
-                                x[i] = cplex.intVar(0, Integer.MAX_VALUE);
-                        }
-
-                        // Define objective function
-                        // Add expressions to objective function (obj)
-                        IloLinearNumExpr obj = cplex.linearNumExpr();
-                        for (int i = 0; i < n; i++) {
-                                obj.addTerm(c[i], x[i]);
-                        }
+                        IloNumVar[] x = initDecisionVarArray(n, cplex);
+                        IloLinearNumExpr obj = defineObjectiveFunction(x, c, cplex);
 
                         // Choose between maximization and minimization
-                        if (isMaximize) cplex.addMaximize(obj);
-                        else cplex.addMinimize(obj); // różni się dla minimize (constraints)
+                        if (isMaximize) {
 
-                        // Define constraints
-                        for (int i = 0; i < m; i++) {
-                                IloLinearNumExpr constraint = cplex.linearNumExpr();
-                                for (int j = 0; j < n; j++) {
-                                        constraint.addTerm(A[i][j], x[j]);
+
+                                // Define constraints
+
+
+                                // Suppress the auxiliary output printout
+                                cplex.setParam(IloCplex.IntParam.SimDisplay, 0);
+
+                                // Solve the model and print the output
+
+                                if (cplex.solve()) {
+                                        double objValue = cplex.getObjValue();
+                                        System.out.println("obj_val = " + objValue);
+
+                                        for(int i = 0; i < n; i++) {
+                                                System.out.println("x[" + (i+1) + "] = " + cplex.getValue(x[i]));
+                                        }
+                                } else {
+                                        System.out.println("Model not solved");
                                 }
-                                cplex.addLe(constraint, b[i]); // define RHS constraints
-                        }
 
-                        // Suppress the auxiliary output printout
-                        cplex.setParam(IloCplex.IntParam.SimDisplay, 0);
-
-                        // Solve the model and print the output
-
-                        if (cplex.solve()) {
-                                double objValue = cplex.getObjValue();
-                                System.out.println("obj_val = " + objValue);
-
-                                for(int i = 0; i < n; i++) {
-                                        System.out.println("x[" + (i+1) + "] = " + cplex.getValue(x[i]));
-                                }
                         } else {
-                                System.out.println("Model not solved");
+
+
+                                cplex.setParam(IloCplex.IntParam.SimDisplay, 0);
+                                /// and so on
                         }
+
+
 
 
 
@@ -148,4 +140,26 @@ public class MyTokenListener extends TokenListener {
 
 
         }
+
+
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
