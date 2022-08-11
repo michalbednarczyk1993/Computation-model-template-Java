@@ -11,26 +11,30 @@ import java.util.List;
 
 
 public class CplexModel {
-    private int n;
-    private int m;
-    private double[][] A;
-    private double[] b;
-    private double[] c;
-    private boolean isMaximize;
-
-    IloCplex cplex;
-    IloNumVar[] x;
-    IloLinearNumExpr obj;
-    List<IloRange> constraints = null;
-    boolean isSolved = false;
+    private IloCplex cplex;
+    private IloNumVar[] x;
+    private IloLinearNumExpr obj;
+    private List<IloRange> constraints = null;
+    private boolean isSolved = false;
 
 
-    public CplexModel(int n, int m, double[][] a, double[] b, double[] c, boolean isMaximize) {
+    /**
+     * Constructor of Cplex model class, which after receiving LP problem
+     * automatically compute solution.
+     *
+     * @param a Constraint coefficient matrix
+     * @param b Capacity constraint vector
+     * @param c Cost vector
+     * @param m Number of constraints
+     * @param n Number of variables
+     * @param isMaximize Maximization or minimization problem
+     */
+    public CplexModel(double[][] a, double[] b, double[] c, int n, int m, boolean isMaximize) {
         try {
             cplex = new IloCplex();
             x = initDecisionVarArray(n);
             obj = defineObjectiveFunction(c);
-            defineConstraints(isMaximize);
+            defineConstraints(a, b, m, n, isMaximize);
 
             // Suppress the auxiliary output printout
             cplex.setParam(IloCplex.IntParam.SimDisplay, 0);
@@ -125,22 +129,22 @@ public class CplexModel {
         return obj;
     }
 
-    private void defineConstraints(boolean isMaximization) throws IloException {
+    private void defineConstraints(double[][] A, double[] b, int m, int n, boolean isMaximization) throws IloException {
         if (isMaximization) {
             cplex.addMaximize(obj);
             for (int i = 0; i < m; i++) {
-                cplex.addLe(createConstraint(i), b[i]); // define RHS constraints
+                cplex.addLe(createConstraint(A, n, i), b[i]); // define RHS constraints
             }
         } else {
             cplex.addMinimize(obj);
             constraints = new ArrayList<>();
             for (int i = 0; i < m; i++) {
-                constraints.add(cplex.addGe(createConstraint(i), b[i]));
+                constraints.add(cplex.addGe(createConstraint(A, n, i), b[i]));
             }
         }
     }
 
-    private IloLinearNumExpr createConstraint(int i) throws IloException {
+    private IloLinearNumExpr createConstraint(double[][] A, int n, int i) throws IloException {
         IloLinearNumExpr constraint = cplex.linearNumExpr();
         for (int j = 0; j < n; j++) {
             constraint.addTerm(A[i][j], x[j]);
